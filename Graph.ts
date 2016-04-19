@@ -55,21 +55,60 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
+
+    // A list of all visited nodes.
+    var visited = new collections.Set<Node>();
+
+    // Auxilliary function for peeking at the last node of a search result.
+    function last(r : SearchResult<Node>) : Node {
+        return r.path[r.path.length - 1];
+    }
+
+    // Compare function used in the priority queue.
+    var compare: collections.ICompareFunction<SearchResult<Node>> =
+    function(a: SearchResult<Node>, b: SearchResult<Node>): number {
+        return b.cost + heuristics(last(b)) - a.cost - heuristics(last(a));
+    }
+
+    // Create the initial item to put in the frontier
+    var init : SearchResult<Node> = {
         path: [start],
         cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
     }
-    return result;
-}
 
+    // Priority queue containing the frontier.
+    var frontier = new collections.PriorityQueue<SearchResult<Node>>(compare);
+    frontier.enqueue(init);
+    visited.add(start);
+
+    // The A* search step.
+    while (!frontier.isEmpty()) {
+        // Fetch the first item in the frontier
+        var result = frontier.dequeue();
+        var node = last(result);
+
+        // Early checks
+        if (goal(node)) { return result; }
+        if (result.path.length > timeout) { continue; }
+
+        // Add all outgoing edges that don't lead to already visited
+        // nodes to the frontier.
+        for (var edge of graph.outgoingEdges(node)) {
+            if (visited.contains(edge.to)) { continue; }
+
+            var newPath : SearchResult<Node> = {
+                path: result.path.concat([edge.to]),
+                cost: result.cost + edge.cost
+            }
+
+            visited.add(edge.to);
+            frontier.enqueue(newPath);
+        }
+    }
+
+    // Search failed, no path found.
+    return null;
+}
 
 //////////////////////////////////////////////////////////////////////
 // here is an example graph

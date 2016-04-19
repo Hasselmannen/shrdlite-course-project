@@ -1,2 +1,5 @@
 shrdlite-*.js
 doc
+Test.js
+node_modules
+lib/collections.js

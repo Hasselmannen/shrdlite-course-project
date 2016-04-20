@@ -56,15 +56,15 @@ function aStarSearch<Node> (
     timeout : number
 ) : SearchResult<Node> {
 
-    // A list of all visited nodes.
+    // A set of all visited nodes
     var visited = new collections.Set<Node>();
 
-    // Auxilliary function for peeking at the last node of a search result.
+    // Auxilliary function for peeking at the last node of a search result
     function last(r : SearchResult<Node>) : Node {
         return r.path[r.path.length - 1];
     }
 
-    // Compare function used in the priority queue.
+    // Compare function used in the priority queue
     var compare: collections.ICompareFunction<SearchResult<Node>> =
     function(a: SearchResult<Node>, b: SearchResult<Node>): number {
         return b.cost + heuristics(last(b)) - a.cost - heuristics(last(a));
@@ -79,7 +79,6 @@ function aStarSearch<Node> (
     // Priority queue containing the frontier.
     var frontier = new collections.PriorityQueue<SearchResult<Node>>(compare);
     frontier.enqueue(init);
-    visited.add(start);
 
     // The A* search step.
     while (!frontier.isEmpty()) {
@@ -87,26 +86,21 @@ function aStarSearch<Node> (
         var result = frontier.dequeue();
         var node = last(result);
 
-        // Early checks
+        // Early checks, add node to visited
         if (goal(node)) { return result; }
-        if (result.path.length > timeout) { continue; }
+        if (!visited.add(node)) { continue; }
 
-        // Add all outgoing edges that don't lead to already visited
-        // nodes to the frontier.
+        // Add all outgoing edges that to the frontier
         for (var edge of graph.outgoingEdges(node)) {
-            if (visited.contains(edge.to)) { continue; }
-
             var newPath : SearchResult<Node> = {
                 path: result.path.concat([edge.to]),
                 cost: result.cost + edge.cost
             }
-
-            visited.add(edge.to);
             frontier.enqueue(newPath);
         }
     }
 
-    // Search failed, no path found.
+    // Search failed; no path found
     return null;
 }
 

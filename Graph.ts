@@ -76,11 +76,11 @@ function aStarSearch<Node> (
         cost: 0
     }
 
-    // Priority queue containing the frontier.
+    // Priority queue containing the frontier
     var frontier = new collections.PriorityQueue<SearchResult<Node>>(compare);
     frontier.enqueue(init);
 
-    // The A* search step.
+    // The A* search step
     while (!frontier.isEmpty()) {
         // Fetch the first item in the frontier
         var result = frontier.dequeue();

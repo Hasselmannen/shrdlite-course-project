@@ -54,20 +54,52 @@ function aStarSearch<Node> (
     goal : (n:Node) => boolean,
     heuristics : (n:Node) => number,
     timeout : number
-) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
+): SearchResult<Node> {
+    // Helper function for last list element
+    const lastElement = (list: Node[]) => list[list.length - 1];
+
+    // Function for ordering so lowest cost + heuristic is picked first in priority queue
+    const comparator: collections.ICompareFunction<SearchResult<Node>> =
+        (a: SearchResult<Node>, b: SearchResult<Node>) =>
+            ((b.cost + heuristics(lastElement(b.path))) - (a.cost + heuristics(lastElement(a.path)))
+        );
+
+    var frontier = new collections.PriorityQueue<SearchResult<Node>>(comparator);
+    frontier.add({
         path: [start],
         cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+    });
+
+    // Remember which nodes has been visited
+    var visited = new collections.Set<Node>();
+
+    var iterations = 0;
+    while (!frontier.isEmpty() && iterations < timeout) {
+        var currentPath: SearchResult<Node> = frontier.dequeue();
+        var currentNode: Node = lastElement(currentPath.path);
+
+        // Do not proceed if visited previously
+        if (!visited.add(currentNode)) {
+            continue;
+        }
+
+        if (goal(currentNode)) {
+            return currentPath;
+        }
+
+        // Add connected nodes
+        for (var edge of graph.outgoingEdges(currentNode)) {
+            var nextNode = edge.to;
+            var newPath: SearchResult<Node> = {
+                path: currentPath.path.concat(nextNode),
+                cost: currentPath.cost + edge.cost
+            }
+            frontier.add(newPath);
+        }
+        iterations++;
     }
-    return result;
+    // No path could be found
+    return null;
 }
 
 

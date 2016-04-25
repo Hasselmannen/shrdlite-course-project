@@ -56,13 +56,11 @@ function aStarSearch<Node> (
     timeout : number
 ): SearchResult<Node> {
     // Helper function for last list element
-    const lastElement = (list: Node[]) => list[list.length - 1];
+    const lastElement = (list : Node[]) => list[list.length - 1];
 
     // Function for ordering so lowest cost + heuristic is picked first in priority queue
-    const comparator: collections.ICompareFunction<SearchResult<Node>> =
-        (a: SearchResult<Node>, b: SearchResult<Node>) =>
-            ((b.cost + heuristics(lastElement(b.path))) - (a.cost + heuristics(lastElement(a.path)))
-        );
+    const comparator : collections.ICompareFunction<SearchResult<Node>> =
+        (a, b) => ((b.cost + heuristics(lastElement(b.path))) - (a.cost + heuristics(lastElement(a.path))));
 
     var frontier = new collections.PriorityQueue<SearchResult<Node>>(comparator);
     frontier.add({
@@ -75,8 +73,8 @@ function aStarSearch<Node> (
 
     var iterations = 0;
     while (!frontier.isEmpty() && iterations < timeout) {
-        var currentPath: SearchResult<Node> = frontier.dequeue();
-        var currentNode: Node = lastElement(currentPath.path);
+        var currentPath : SearchResult<Node> = frontier.dequeue();
+        var currentNode : Node = lastElement(currentPath.path);
 
         // Do not proceed if visited previously
         if (!visited.add(currentNode)) {
@@ -90,7 +88,7 @@ function aStarSearch<Node> (
         // Add connected nodes
         for (var edge of graph.outgoingEdges(currentNode)) {
             var nextNode = edge.to;
-            var newPath: SearchResult<Node> = {
+            var newPath : SearchResult<Node> = {
                 path: currentPath.path.concat(nextNode),
                 cost: currentPath.cost + edge.cost
             }

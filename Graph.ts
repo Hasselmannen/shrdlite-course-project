@@ -88,15 +88,15 @@ function aStarSearch<Node> (
 
         if (goal(innerNode)) {
             // Construct a SearchResult by backtracing
-            var result : SearchResult<Node> = {
-                path: [],
-                cost: pathNode.cost
-            }
+            var reversePath : Node[] = [];
             var backtraceNode : PathNode = pathNode;
             do {
-                result.path.unshift(backtraceNode.innerNode);
+                reversePath.push(backtraceNode.innerNode);
             } while ((backtraceNode = backtraceNode.parent) != null)
-            return result;
+            return {
+                path: reversePath.reverse(),
+                cost: pathNode.cost
+            };
         }
 
         // Add connected nodes

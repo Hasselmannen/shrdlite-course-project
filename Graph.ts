@@ -55,44 +55,58 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ): SearchResult<Node> {
-    // Helper function for last list element
-    const lastElement = (list : Node[]) => list[list.length - 1];
+    // Temporary class used in priority queue
+    class PathNode {
+        parent : PathNode;
+        innerNode : Node;
+        cost : number;
+    }
 
     // Function for ordering so lowest cost + heuristic is picked first in priority queue
-    const comparator : collections.ICompareFunction<SearchResult<Node>> =
-        (a, b) => ((b.cost + heuristics(lastElement(b.path))) - (a.cost + heuristics(lastElement(a.path))));
+    const comparator : collections.ICompareFunction<PathNode> =
+        (a, b) => ((b.cost + heuristics(b.innerNode)) - (a.cost + heuristics(a.innerNode)));
 
-    var frontier = new collections.PriorityQueue<SearchResult<Node>>(comparator);
+    var frontier = new collections.PriorityQueue<PathNode>(comparator);
     frontier.add({
-        path: [start],
+        parent: null,
+        innerNode: start,
         cost: 0
     });
 
-    // Remember which nodes has been visited
+    // Remember which nodes have been visited
     var visited = new collections.Set<Node>();
 
     var iterations = 0;
     while (!frontier.isEmpty() && iterations < timeout) {
-        var currentPath : SearchResult<Node> = frontier.dequeue();
-        var currentNode : Node = lastElement(currentPath.path);
+        var pathNode : PathNode = frontier.dequeue();
+        var innerNode : Node = pathNode.innerNode;
 
         // Do not proceed if visited previously
-        if (!visited.add(currentNode)) {
+        if (!visited.add(innerNode)) {
             continue;
         }
 
-        if (goal(currentNode)) {
-            return currentPath;
+        if (goal(innerNode)) {
+            // Construct a SearchResult by backtracing
+            var result : SearchResult<Node> = {
+                path: [],
+                cost: pathNode.cost
+            }
+            var backtraceNode : PathNode = pathNode;
+            do {
+                result.path.unshift(backtraceNode.innerNode);
+            } while ((backtraceNode = backtraceNode.parent) != null)
+            return result;
         }
 
         // Add connected nodes
-        for (var edge of graph.outgoingEdges(currentNode)) {
+        for (var edge of graph.outgoingEdges(innerNode)) {
             var nextNode = edge.to;
-            var newPath : SearchResult<Node> = {
-                path: currentPath.path.concat(nextNode),
-                cost: currentPath.cost + edge.cost
-            }
-            frontier.add(newPath);
+            frontier.add({
+                parent: pathNode,
+                innerNode: nextNode,
+                cost: pathNode.cost + edge.cost
+            });
         }
         iterations++;
     }

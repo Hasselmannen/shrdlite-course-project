@@ -58,19 +58,19 @@ function aStarSearch<Node> (
 
     class FrontierItem {
         constructor(
-            public curr : Node,
-            public prev : FrontierItem,
+            public currNode : Node,
+            public prevItem : FrontierItem,
             public cost : number
         ) { }
 
         // Order according to lowest cost + heuristic
         static compare: collections.ICompareFunction<FrontierItem> =
-        (a, b) => b.cost + heuristics(b.curr) - a.cost - heuristics(a.curr);
+        (a, b) => b.cost + heuristics(b.currNode) - a.cost - heuristics(a.currNode);
 
         // Reconstruct a path to the current node
         path() : SearchResult<Node> {
             var result = new SearchResult<Node>();
-            result.path = this.prev ? this.prev.path().path.concat([this.curr]) : [this.curr];
+            result.path = this.prevItem ? this.prevItem.path().path.concat([this.currNode]) : [this.currNode];
             result.cost = this.cost;
             return result;
         }
@@ -86,14 +86,16 @@ function aStarSearch<Node> (
         var item = frontier.dequeue();
 
         // Only do work if the node is the frontier has not already been visited
-        if (visited.add(item.curr)) {
+        if (visited.add(item.currNode)) {
             if (timeout-- < 0) { break; }
             // We found the goal node, reconstruct the path there
-            if (goal(item.curr)) { return item.path(); }
+            if (goal(item.currNode)) { return item.path(); }
 
             // Add nodes connected to outgoing edges to the frontier
-            for (var edge of graph.outgoingEdges(item.curr)) {
-                frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
+            for (var edge of graph.outgoingEdges(item.currNode)) {
+                if (!visited.contains(edge.to)) {
+                    frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
+                }
             }
         }
     }

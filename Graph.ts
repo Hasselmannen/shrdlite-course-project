@@ -56,52 +56,48 @@ function aStarSearch<Node> (
     timeout : number
 ) : SearchResult<Node> {
 
-    // A set of all visited nodes
-    var visited = new collections.Set<Node>();
+    class FrontierItem {
+        constructor(
+            public curr : Node,
+            public prev : FrontierItem,
+            public cost : number
+        ) { }
 
-    // Auxilliary function for peeking at the last node of a search result
-    function last(r : SearchResult<Node>) : Node {
-        return r.path[r.path.length - 1];
-    }
+        // Order according to lowest cost + heuristic
+        static compare: collections.ICompareFunction<FrontierItem> =
+        (a, b) => b.cost + heuristics(b.curr) - a.cost - heuristics(a.curr);
 
-    // Compare function used in the priority queue
-    var compare: collections.ICompareFunction<SearchResult<Node>> =
-    function(a: SearchResult<Node>, b: SearchResult<Node>): number {
-        return b.cost + heuristics(last(b)) - a.cost - heuristics(last(a));
-    }
-
-    // Create the initial item to put in the frontier
-    var init : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    }
-
-    // Priority queue containing the frontier
-    var frontier = new collections.PriorityQueue<SearchResult<Node>>(compare);
-    frontier.enqueue(init);
-
-    // The A* search step
-    while (!frontier.isEmpty()) {
-        // Fetch the first item in the frontier
-        var result = frontier.dequeue();
-        var node = last(result);
-
-        // Early checks, add node to visited
-        if (goal(node)) { return result; }
-        if (!visited.add(node)) { continue; }
-
-        // Add all outgoing edges that to the frontier
-        for (var edge of graph.outgoingEdges(node)) {
-            var newPath : SearchResult<Node> = {
-                path: result.path.concat([edge.to]),
-                cost: result.cost + edge.cost
-            }
-            frontier.enqueue(newPath);
+        // Reconstruct a path to the current node
+        path() : SearchResult<Node> {
+            var result = new SearchResult<Node>();
+            result.path = this.prev ? this.prev.path().path.concat([this.curr]) : [this.curr];
+            result.cost = this.cost;
+            return result;
         }
     }
 
-    // Search failed; no path found
-    return null;
+    // Keep track of visited nodes and the frontier
+    var visited  = new collections.Set<Node>();
+    var frontier = new collections.PriorityQueue<FrontierItem>(FrontierItem.compare);
+
+    // Recursive A* search
+    return (function loop(item: FrontierItem): SearchResult<Node> {
+        // Only do work if node is not already visited
+        if (visited.add(item.curr)) {
+
+            // No path was found, return undefined
+            if (timeout-- < 0) { return void 0; }
+            // We found the goal node, reconstruct the path there
+            if (goal(item.curr)) { return item.path(); }
+
+            // Add nodes connected to outgoing edges to the frontier
+            for (var edge of graph.outgoingEdges(item.curr)) {
+                frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
+            }
+        }
+        // Next iteration...
+        return loop(frontier.dequeue());
+    })(new FrontierItem(start, null, 0));
 }
 
 //////////////////////////////////////////////////////////////////////

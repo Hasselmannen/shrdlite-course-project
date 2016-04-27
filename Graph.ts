@@ -55,6 +55,7 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
+    var startTime = new Date().getTime();
 
     class FrontierItem {
         constructor(
@@ -87,7 +88,6 @@ function aStarSearch<Node> (
 
         // Skip if the node has already been visited
         if (!visited.add(item.currNode)) { continue; }
-        if (timeout-- < 0) { break; }
         // We found the goal node, reconstruct the path there
         if (goal(item.currNode)) { return item.path(); }
 
@@ -96,6 +96,12 @@ function aStarSearch<Node> (
             if (!visited.contains(edge.to)) {
                 frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
             }
+        }
+
+        // Give up if search has taken too long
+        var now = new Date().getTime();
+        if (now - startTime > timeout * 1000) {
+            break;
         }
     }
     // No path was found, return undefined

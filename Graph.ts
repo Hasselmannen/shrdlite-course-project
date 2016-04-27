@@ -65,20 +65,20 @@ function aStarSearch<Node> (
         ) { }
 
         // Order according to lowest cost + heuristic
-        static compare: collections.ICompareFunction<FrontierItem> =
-        (a, b) => b.cost + heuristics(b.currNode) - a.cost - heuristics(a.currNode);
+        static compare : collections.ICompareFunction<FrontierItem> =
+            (a, b) => b.cost + heuristics(b.currNode) - a.cost - heuristics(a.currNode);
 
         // Reconstruct a path to the current node
         path() : SearchResult<Node> {
             var result = new SearchResult<Node>();
-            result.path = this.prevItem ? this.prevItem.path().path.concat([this.currNode]) : [this.currNode];
+            result.path = this.prevItem ? this.prevItem.path().path.concat(this.currNode) : [this.currNode];
             result.cost = this.cost;
             return result;
         }
     }
 
     // Keep track of visited nodes and the frontier
-    var visited  = new collections.Set<Node>();
+    var visited = new collections.Set<Node>();
     var frontier = new collections.PriorityQueue<FrontierItem>(FrontierItem.compare);
     frontier.enqueue(new FrontierItem(start, null, 0));
 

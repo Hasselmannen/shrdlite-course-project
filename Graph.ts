@@ -79,14 +79,15 @@ function aStarSearch<Node> (
     // Keep track of visited nodes and the frontier
     var visited  = new collections.Set<Node>();
     var frontier = new collections.PriorityQueue<FrontierItem>(FrontierItem.compare);
+    frontier.enqueue(new FrontierItem(start, null, 0));
 
-    // Recursive A* search
-    return (function loop(item: FrontierItem): SearchResult<Node> {
-        // Only do work if node is not already visited
+    // A* search
+    while (!frontier.isEmpty()) {
+        var item = frontier.dequeue();
+
+        // Only do work if the node is the frontier has not already been visited
         if (visited.add(item.curr)) {
-
-            // No path was found, return undefined
-            if (timeout-- < 0) { return void 0; }
+            if (timeout-- < 0) { break; }
             // We found the goal node, reconstruct the path there
             if (goal(item.curr)) { return item.path(); }
 
@@ -95,9 +96,9 @@ function aStarSearch<Node> (
                 frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
             }
         }
-        // Next iteration...
-        return loop(frontier.dequeue());
-    })(new FrontierItem(start, null, 0));
+    }
+    // No path was found, return undefined
+    return void 0;
 }
 
 //////////////////////////////////////////////////////////////////////

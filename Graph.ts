@@ -85,22 +85,21 @@ function aStarSearch<Node> (
     while (!frontier.isEmpty()) {
         var item = frontier.dequeue();
 
-        // Only do work if the node is the frontier has not already been visited
-        if (visited.add(item.currNode)) {
-            if (timeout-- < 0) { break; }
-            // We found the goal node, reconstruct the path there
-            if (goal(item.currNode)) { return item.path(); }
+        // Skip if the node has already been visited
+        if (!visited.add(item.currNode)) { continue; }
+        if (timeout-- < 0) { break; }
+        // We found the goal node, reconstruct the path there
+        if (goal(item.currNode)) { return item.path(); }
 
-            // Add nodes connected to outgoing edges to the frontier
-            for (var edge of graph.outgoingEdges(item.currNode)) {
-                if (!visited.contains(edge.to)) {
-                    frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
-                }
+        // Add nodes connected to outgoing edges to the frontier
+        for (var edge of graph.outgoingEdges(item.currNode)) {
+            if (!visited.contains(edge.to)) {
+                frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
             }
         }
     }
     // No path was found, return undefined
-    return void 0;
+    return undefined;
 }
 
 //////////////////////////////////////////////////////////////////////

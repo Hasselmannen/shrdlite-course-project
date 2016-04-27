@@ -57,7 +57,7 @@ function aStarSearch<Node> (
 ): SearchResult<Node> {
     // Temporary class used in priority queue
     class PathNode {
-        parent : PathNode;
+        previous : PathNode;
         innerNode : Node;
         cost : number;
     }
@@ -68,7 +68,7 @@ function aStarSearch<Node> (
 
     var frontier = new collections.PriorityQueue<PathNode>(comparator);
     frontier.add({
-        parent: null,
+        previous: null,
         innerNode: start,
         cost: 0
     });
@@ -92,7 +92,7 @@ function aStarSearch<Node> (
             var backtraceNode : PathNode = pathNode;
             do {
                 reversePath.push(backtraceNode.innerNode);
-            } while ((backtraceNode = backtraceNode.parent) != null)
+            } while ((backtraceNode = backtraceNode.previous) != null)
             return {
                 path: reversePath.reverse(),
                 cost: pathNode.cost
@@ -103,7 +103,7 @@ function aStarSearch<Node> (
         for (var edge of graph.outgoingEdges(innerNode)) {
             var nextNode = edge.to;
             frontier.add({
-                parent: pathNode,
+                previous: pathNode,
                 innerNode: nextNode,
                 cost: pathNode.cost + edge.cost
             });

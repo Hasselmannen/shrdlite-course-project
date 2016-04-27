@@ -55,19 +55,85 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
-    }
-    return result;
+
+	// Element to store in frontier
+	class FrontierNode {
+		node : Node; // The node
+		previous : FrontierNode; // The previous node
+		cost : number; // The cost from start to the node
+		heuristic : number; // The heuristic from the node to the goal
+	}
+
+	// Sort function for frontier, returns:
+	// -1 if lhs < rhs
+	// 1 if lhs > rhs
+	// 0 if lhs == rh
+	var compareFunc : (lhs : FrontierNode, rhs : FrontierNode) => number = function(lhs, rhs) {
+		
+		var res : number = (lhs.cost + lhs.heuristic) - (rhs.cost + rhs.heuristic);
+		if (res == 0) return 0;
+		return res / Math.abs(res);
+	}
+
+	// Create the frontier and add the start element
+	var frontier = new collections.PriorityQueue<FrontierNode>(compareFunc);
+	frontier.add({ node: start, previous: null, cost: 0, heuristic: heuristics(start) });
+
+	var last : FrontierNode = null;
+
+	// Check max timeout nodes
+	for (var i: number = 0; i < timeout; ++i) {
+
+		// Get current node
+		if (frontier.isEmpty()) {
+			console.log("Failed, frontier is empty");
+			break;
+		}
+		var current: FrontierNode = frontier.dequeue();
+
+		//console.log(current);
+
+		// Check if goal is reached
+		if (goal(current.node)) {
+			last = current;
+			break;
+		}
+
+		// Add nodes from outgoing edges to frontier
+		var outgoing: Edge<Node>[] = graph.outgoingEdges(current.node);
+		for (var j: number = 0; j < outgoing.length; ++j) {
+			var fn = new FrontierNode();
+			fn.node = outgoing[j].to;
+			fn.previous = current;
+			fn.cost = current.cost + outgoing[j].cost;
+			fn.heuristic = heuristics(outgoing[j].to);
+			frontier.add(fn);
+		}
+
+	}
+
+	// Check if we found something
+	if (last == null) {
+		// Aw :(
+		//console.log("Awwww :(");
+		return null;
+	}
+
+	// Create result and set its cost
+	var result = new SearchResult<Node>();
+	result.cost = last.cost;
+
+	// Backtrack from last node and recreate path
+	while (last.previous != null) {
+		result.path.push(last.node);
+		last = last.previous;
+	}
+	result.path.push(last.node); // Edge case
+
+	// Reverse array so start comes first
+	result.path.reverse();
+
+	return result;
 }
 
 

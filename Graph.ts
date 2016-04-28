@@ -64,17 +64,17 @@ function aStarSearch<Node> (
 		node : Node; // The node
 		previous : FrontierNode; // The previous node
 		cost : number; // The cost from start to the node
-		heuristic : number; // The heuristic from the node to the goal
+		frontierValue : number; // Cost + heuristic
 	}
 
 	// Sort function for frontier
 	var compareFunc : (lhs : FrontierNode, rhs : FrontierNode) => number = function(lhs, rhs) {
-		return (rhs.cost + rhs.heuristic) - (lhs.cost + lhs.heuristic);
+		return rhs.frontierValue - lhs.frontierValue;
 	}
 
 	// Create the frontier and add the start element
 	var frontier = new collections.PriorityQueue<FrontierNode>(compareFunc);
-	frontier.add({ node: start, previous: null, cost: 0, heuristic: heuristics(start) });
+	frontier.add({ node: start, previous: null, cost: 0, frontierValue: heuristics(start) });
 
 	var last : FrontierNode = null;
 	var visited = new collections.Set<Node>();
@@ -117,7 +117,7 @@ function aStarSearch<Node> (
 			fn.node = outgoing[j].to;
 			fn.previous = current;
 			fn.cost = current.cost + outgoing[j].cost;
-			fn.heuristic = heuristics(outgoing[j].to);
+			fn.frontierValue = fn.cost + heuristics(outgoing[j].to);
 			frontier.add(fn);
 		}
 	}

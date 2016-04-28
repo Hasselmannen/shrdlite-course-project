@@ -58,7 +58,7 @@ function aStarSearch<Node> (
     var startTime = Date.now();
 
     class FrontierNode {
-        public frontierValue: number;
+        public frontierValue : number;
 
         constructor(
             public node : Node,

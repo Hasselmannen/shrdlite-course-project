@@ -133,11 +133,10 @@ function aStarSearch<Node> (
 	result.path = [];
 
 	// Backtrack from last node and recreate path
-	while (last.previous != null) {
+	while (last != null) {
 		result.path.push(last.node);
 		last = last.previous;
 	}
-	result.path.push(last.node); // Edge case
 
 	// Reverse array so start comes first
 	result.path.reverse();

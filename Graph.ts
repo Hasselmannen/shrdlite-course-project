@@ -56,6 +56,9 @@ function aStarSearch<Node> (
     timeout : number
 ) : SearchResult<Node> {
 
+	var startTimeMs : number = Date.now();
+	var timeoutMs : number = timeout * 1000;
+
 	// Element to store in frontier
 	class FrontierNode {
 		node : Node; // The node
@@ -64,15 +67,9 @@ function aStarSearch<Node> (
 		heuristic : number; // The heuristic from the node to the goal
 	}
 
-	// Sort function for frontier, returns:
-	// -1 if lhs < rhs
-	// 1 if lhs > rhs
-	// 0 if lhs == rh
+	// Sort function for frontier
 	var compareFunc : (lhs : FrontierNode, rhs : FrontierNode) => number = function(lhs, rhs) {
-		
-		var res : number = (lhs.cost + lhs.heuristic) - (rhs.cost + rhs.heuristic);
-		if (res == 0) return 0;
-		return res / Math.abs(res);
+		return (rhs.cost + rhs.heuristic) - (lhs.cost + lhs.heuristic);
 	}
 
 	// Create the frontier and add the start element
@@ -80,18 +77,31 @@ function aStarSearch<Node> (
 	frontier.add({ node: start, previous: null, cost: 0, heuristic: heuristics(start) });
 
 	var last : FrontierNode = null;
+	var visited = new collections.Set<Node>();
 
-	// Check max timeout nodes
-	for (var i: number = 0; i < timeout; ++i) {
+	// The search itself
+	while (true) {
+
+		// Check if timeout
+		var timeSinceStartMs = Date.now() - startTimeMs;
+		if (timeSinceStartMs > timeoutMs) {
+			// Time is up, we failed.
+			return undefined;
+		}
 
 		// Get current node
 		if (frontier.isEmpty()) {
-			console.log("Failed, frontier is empty");
 			break;
 		}
 		var current: FrontierNode = frontier.dequeue();
 
-		//console.log(current);
+		// Check if node is already visisted
+		if (visited.contains(current.node)) {
+			continue;
+		}
+
+		// Add current node to visited
+		visited.add(current.node);
 
 		// Check if goal is reached
 		if (goal(current.node)) {
@@ -102,6 +112,7 @@ function aStarSearch<Node> (
 		// Add nodes from outgoing edges to frontier
 		var outgoing: Edge<Node>[] = graph.outgoingEdges(current.node);
 		for (var j: number = 0; j < outgoing.length; ++j) {
+			if (visited.contains(outgoing[j].to)) continue;
 			var fn = new FrontierNode();
 			fn.node = outgoing[j].to;
 			fn.previous = current;
@@ -109,19 +120,17 @@ function aStarSearch<Node> (
 			fn.heuristic = heuristics(outgoing[j].to);
 			frontier.add(fn);
 		}
-
 	}
 
 	// Check if we found something
 	if (last == null) {
-		// Aw :(
-		//console.log("Awwww :(");
-		return null;
+		return undefined; // Aw :(
 	}
 
 	// Create result and set its cost
 	var result = new SearchResult<Node>();
 	result.cost = last.cost;
+	result.path = [];
 
 	// Backtrack from last node and recreate path
 	while (last.previous != null) {

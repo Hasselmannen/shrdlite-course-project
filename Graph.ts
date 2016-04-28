@@ -105,11 +105,11 @@ function aStarSearch<Node> (
 
       // Add neighbours to frontier
       for (var edge of graph.outgoingEdges(current.node)) {
-        //if (!visited.contains(edge.to)) {
+        if (!visited.contains(edge.to)) {
           frontier.enqueue(
             new NodeData(current, edge.to, current.cost + edge.cost)
           );
-        //}
+        }
       }
 
     }

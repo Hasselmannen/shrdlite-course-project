@@ -55,19 +55,67 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+
+    // Class for building path
+	  class NodeData {
+      constructor(
+        public previous: NodeData,
+        public node: Node,
+        public cost: number
+      ) { }
+
+      toResult(): SearchResult<Node> {
+        var result = new SearchResult<Node>();
+        result.cost = this.cost;
+        var path: Node[] = [];
+        var current: NodeData = this;
+        while (current.previous) {
+          path.push(current.node);
+          current = current.previous;
+        }
+        result.path = path.reverse();
+
+        return result;
+      }
+
     }
-    return result;
+
+      // Comparator for ordering the priority queue
+    const comparator : collections.ICompareFunction<NodeData> =
+      (a, b) => ((b.cost + heuristics(b.node)) - (a.cost + heuristics(a.node)));
+
+
+    var visited = new collections.Set<Node>();
+    var frontier = new collections.PriorityQueue<NodeData>(comparator);
+    var startTime = Date.now();
+    frontier.enqueue(new NodeData(undefined, start, 0));
+
+    while (!frontier.isEmpty()) {
+
+      // Timeout check -> abort if time exceeds timeout
+      var elapsedTimeMs = Date.now() - startTime;
+      if (elapsedTimeMs > timeout * 1000) { return undefined; }
+
+      var current: NodeData = frontier.dequeue();
+
+      // Make sure not already visited
+      if (!visited.add(current.node)) { continue; }
+      // Check if the goal is found
+      if (goal(current.node)) { return current.toResult(); }
+
+      // Add neighbours to frontier
+      for (var edge of graph.outgoingEdges(current.node)) {
+        //if (!visited.contains(edge.to)) {
+          frontier.enqueue(
+            new NodeData(current, edge.to, current.cost + edge.cost)
+          );
+        //}
+      }
+
+    }
+    // No path found
+    return undefined;
 }
+
 
 

@@ -79,7 +79,7 @@ function aStarSearch<Node> (
             result.path = [];
             // Add all nodes in path
             var backtraceNode : FrontierNode = this;
-            while (backtraceNode != null) {
+            while (backtraceNode) {
                 result.path.push(backtraceNode.node);
                 backtraceNode = backtraceNode.previous;
             }

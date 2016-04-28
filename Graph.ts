@@ -55,56 +55,66 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    var startTime = new Date().getTime();
+    var startTime = Date.now();
 
-    class FrontierItem {
+    class FrontierNode {
+        public frontierValue: number;
+
         constructor(
-            public currNode : Node,
-            public prevItem : FrontierItem,
+            public node : Node,
+            public previous : FrontierNode,
             public cost : number
-        ) { }
+        ) {
+            this.frontierValue = cost + heuristics(node);
+        }
 
-        // Order according to lowest cost + heuristic
-        static compare : collections.ICompareFunction<FrontierItem> =
-            (a, b) => b.cost + heuristics(b.currNode) - a.cost - heuristics(a.currNode);
+        // Order so lowest cost + heuristic is picked first in priority queue
+        static compare : collections.ICompareFunction<FrontierNode> =
+            (a, b) => b.frontierValue - a.frontierValue;
 
-        // Reconstruct a path to the current node
-        path() : SearchResult<Node> {
+        // Construct a SearchResult by backtracing
+        toResult() : SearchResult<Node> {
             var result = new SearchResult<Node>();
-            result.path = this.prevItem ? this.prevItem.path().path.concat(this.currNode) : [this.currNode];
             result.cost = this.cost;
+            result.path = [];
+            // Add all nodes in path
+            var backtraceNode : FrontierNode = this;
+            while (backtraceNode != null) {
+                result.path.push(backtraceNode.node);
+                backtraceNode = backtraceNode.previous;
+            }
+            result.path = result.path.reverse();
             return result;
         }
     }
 
     // Keep track of visited nodes and the frontier
     var visited = new collections.Set<Node>();
-    var frontier = new collections.PriorityQueue<FrontierItem>(FrontierItem.compare);
-    frontier.enqueue(new FrontierItem(start, null, 0));
+    var frontier = new collections.PriorityQueue<FrontierNode>(FrontierNode.compare);
+    frontier.enqueue(new FrontierNode(start, null, 0));
 
-    // A* search
     while (!frontier.isEmpty()) {
-        var item = frontier.dequeue();
+        var frontierNode = frontier.dequeue();
 
         // Skip if the node has already been visited
-        if (!visited.add(item.currNode)) { continue; }
+        if (!visited.add(frontierNode.node)) continue;
         // We found the goal node, reconstruct the path there
-        if (goal(item.currNode)) { return item.path(); }
+        if (goal(frontierNode.node)) return frontierNode.toResult();
 
         // Add nodes connected to outgoing edges to the frontier
-        for (var edge of graph.outgoingEdges(item.currNode)) {
+        for (var edge of graph.outgoingEdges(frontierNode.node)) {
             if (!visited.contains(edge.to)) {
-                frontier.enqueue(new FrontierItem(edge.to, item, item.cost + edge.cost));
+                frontier.enqueue(new FrontierNode(edge.to, frontierNode, frontierNode.cost + edge.cost));
             }
         }
 
         // Give up if search has taken too long
-        var now = new Date().getTime();
+        var now = Date.now();
         if (now - startTime > timeout * 1000) {
             break;
         }
     }
-    // No path was found, return undefined
+    // No path was found
     return undefined;
 }
 

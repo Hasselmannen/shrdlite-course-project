@@ -55,19 +55,66 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
-    }
-    return result;
-}
+    var startTime = Date.now();
 
+    class FrontierNode {
+        public frontierValue : number;
+
+        constructor(
+            public node : Node,
+            public previous : FrontierNode,
+            public cost : number
+        ) {
+            this.frontierValue = cost + heuristics(node);
+        }
+
+        // Order so lowest cost + heuristic is picked first in priority queue
+        static compare : collections.ICompareFunction<FrontierNode> =
+            (a, b) => b.frontierValue - a.frontierValue;
+
+        // Construct a SearchResult by backtracing
+        toResult() : SearchResult<Node> {
+            var result = new SearchResult<Node>();
+            result.cost = this.cost;
+            result.path = [];
+            // Add all nodes in path
+            var backtraceNode : FrontierNode = this;
+            while (backtraceNode) {
+                result.path.push(backtraceNode.node);
+                backtraceNode = backtraceNode.previous;
+            }
+            result.path = result.path.reverse();
+            return result;
+        }
+    }
+
+    // Keep track of visited nodes and the frontier
+    var visited = new collections.Set<Node>();
+    var frontier = new collections.PriorityQueue<FrontierNode>(FrontierNode.compare);
+    frontier.enqueue(new FrontierNode(start, null, 0));
+
+    while (!frontier.isEmpty()) {
+        var frontierNode = frontier.dequeue();
+
+        // Skip if the node has already been visited
+        if (!visited.add(frontierNode.node)) continue;
+        // We found the goal node, reconstruct the path there
+        if (goal(frontierNode.node)) return frontierNode.toResult();
+
+        // Add nodes connected to outgoing edges to the frontier
+        for (var edge of graph.outgoingEdges(frontierNode.node)) {
+            if (!visited.contains(edge.to)) {
+                frontier.enqueue(new FrontierNode(edge.to, frontierNode, frontierNode.cost + edge.cost));
+            }
+        }
+
+        // Give up if search has taken too long
+        var now = Date.now();
+        if (now - startTime > timeout * 1000) {
+            break;
+        }
+    }
+    // No path was found
+    return undefined;
+}
 

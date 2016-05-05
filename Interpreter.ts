@@ -1,14 +1,16 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
 
+///<reference path ="ExampleWorlds.ts"/>
+
 /**
 * Interpreter module
-* 
+*
 * The goal of the Interpreter module is to interpret a sentence
 * written by the user in the context of the current world state. In
 * particular, it must figure out which objects in the world,
 * i.e. which elements in the `objects` field of WorldState, correspond
-* to the ones referred to in the sentence. 
+* to the ones referred to in the sentence.
 *
 * Moreover, it has to derive what the intended goal state is and
 * return it as a logical formula described in terms of literals, where
@@ -29,21 +31,21 @@ module Interpreter {
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
 
-/**
-Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. No need to change this one.
-* @param parses List of parses produced by the Parser.
-* @param currentState The current state of the world.
-* @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
-*/    
-    export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
-        var errors : Error[] = [];
-        var interpretations : InterpretationResult[] = [];
+    /**
+    Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. No need to change this one.
+    * @param parses List of parses produced by the Parser.
+    * @param currentState The current state of the world.
+    * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
+    */
+    export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
+        var errors: Error[] = [];
+        var interpretations: InterpretationResult[] = [];
         parses.forEach((parseresult) => {
             try {
-                var result : InterpretationResult = <InterpretationResult>parseresult;
+                var result: InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
-            } catch(err) {
+            } catch (err) {
                 errors.push(err);
             }
         });
@@ -56,7 +58,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     }
 
     export interface InterpretationResult extends Parser.ParseResult {
-        interpretation : DNFFormula;
+        interpretation: DNFFormula;
     }
 
     export type DNFFormula = Conjunction[];
@@ -67,28 +69,28 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     * hold among some objects.
     */
     export interface Literal {
-	/** Whether this literal asserts the relation should hold
-	 * (true polarity) or not (false polarity). For example, we
-	 * can specify that "a" should *not* be on top of "b" by the
-	 * literal {polarity: false, relation: "ontop", args:
-	 * ["a","b"]}.
-	 */
-        polarity : boolean;
-	/** The name of the relation in question. */
-        relation : string;
-	/** The arguments to the relation. Usually these will be either objects 
-     * or special strings such as "floor" or "floor-N" (where N is a column) */
-        args : string[];
+        /** Whether this literal asserts the relation should hold
+         * (true polarity) or not (false polarity). For example, we
+         * can specify that "a" should *not* be on top of "b" by the
+         * literal {polarity: false, relation: "ontop", args:
+         * ["a","b"]}.
+         */
+        polarity: boolean;
+        /** The name of the relation in question. */
+        relation: string;
+        /** The arguments to the relation. Usually these will be either objects
+         * or special strings such as "floor" or "floor-N" (where N is a column) */
+        args: string[];
     }
 
-    export function stringify(result : InterpretationResult) : string {
+    export function stringify(result: InterpretationResult): string {
         return result.interpretation.map((literals) => {
             return literals.map((lit) => stringifyLiteral(lit)).join(" & ");
             // return literals.map(stringifyLiteral).join(" & ");
         }).join(" | ");
     }
 
-    export function stringifyLiteral(lit : Literal) : string {
+    export function stringifyLiteral(lit: Literal): string {
         return (lit.polarity ? "" : "-") + lit.relation + "(" + lit.args.join(",") + ")";
     }
 
@@ -105,17 +107,149 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
-    function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
+    function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
+
+        switch (cmd.command) {
+            case "move":
+                if (!cmd.entity) throw "No entity specified in move.";
+                var entities: string[] = findCandidates(cmd.entity.object, state);
+                switch (cmd.entity.quantifier) {
+                    case "any":
+                        //cmd.entity.
+                        break;
+                    case "the":
+                        if (entities.length < 1) throw "No such entity found."
+                        if (entities.length > 1) throw "Ambiguous entity."
+                        break;
+                    case "all":
+                        break;
+                }
+                break;
+            case "put":
+                break;
+            case "take":
+                break;
+        }
+
+
+
         // This returns a dummy interpretation involving two random objects in the world
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
+        var objects: string[] = Array.prototype.concat.apply([], state.stacks);
+        var a: string = objects[Math.floor(Math.random() * objects.length)];
+        var b: string = objects[Math.floor(Math.random() * objects.length)];
+        var interpretation: DNFFormula = [[
+            { polarity: true, relation: "ontop", args: [a, "floor"] },
+            { polarity: true, relation: "holding", args: [b] }
         ]];
         return interpretation;
     }
 
+
+
+
+
+    /**
+     * Finds the index in the stack to which the given id belongs in the given
+     * list of stacks.
+     * @param id The id of the object to be located.
+     * @param stacks The list of the world's stacks.
+     * @returns The index of the stack to which the id belongs, or -1 if it could not be located.
+     */
+    function findStack(id: string, stacks: string[][]): number {
+        for (var i = stacks.length - 1; i >= 0; i--) {
+            if (stacks[i].indexOf(id) !== -1) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * A class containing positional data about an object in a world.
+     */
+    class Candidate {
+        /**
+         * @param id The unique identifer of the object.
+         * @param stack The index of the stack to which this object belongs.
+         * @param pos This object's position in its stack.
+         */
+        constructor(
+            public id: string,
+            public stack: number,
+            public pos: number
+        ) { }
+
+        /**
+         * Given a list of stacks and a positional relation, returns the
+         * identifiers of objects which are positioned so that the relation
+         * is satisfied.
+         *
+         * TODO: Does not yet handle quantifiers or floors.
+         *
+         * @param stacks The stacks of the world.
+         * @param relation The positional relation of this object to other objects in the world.
+         * @returns A list of identifiers that satisfy the relation.
+         */
+        findRelated(stacks: string[][], relation: string): string[] {
+            switch (relation) {
+                case "leftof":
+                    return this.stack < stacks.length ?
+                        stacks[this.stack + 1] : [];
+                case "rightof":
+                    return this.stack > 0 ? stacks[this.stack - 1] : [];
+                case "ontop":
+                    return this.pos > 0 ?
+                        [stacks[this.stack][this.pos - 1]] : [];
+                case "under":
+                    return stacks[this.stack].slice(
+                        stacks[this.stack].indexOf(this.id) + 1);
+                case "beside":
+                    return (this.stack > 0 ?
+                        stacks[this.stack - 1] : []).concat(
+                        this.stack < stacks.length - 1 ?
+                            stacks[this.stack + 1] : []);
+                case "above":
+                    return stacks[this.stack].slice(
+                        0, stacks[this.stack].indexOf(this.id) - 1);
+            }
+        }
+    }
+
+    /**
+     * Identifies which objects in the world that satisfy a given description of an object.
+     *
+     * @param obj A description of the object to identify.
+     * @param state The state of the world.
+     * @param ids A list of identifiers to which to restrict the identification.
+     * @returns A list of candidates that satisfy the description of the object.
+     */
+    function findCandidates(obj: Parser.Object, state: WorldState, ids?: string[]): string[] {
+
+        var candidates: Candidate[] = [];
+        var keys: string[] = ids || Object.keys(state.objects);
+
+        for (var id of keys) {
+            var stack: number = findStack(id, state.stacks);
+            candidates.push(
+                new Candidate(id, stack, state.stacks[stack].indexOf(id))
+            );
+        }
+
+        for (var prop of ["color", "form", "size"]) {
+            if (obj[prop]) {
+                candidates = candidates.filter((candidate) =>
+                    state.objects[candidate.id][prop] == obj[prop]);
+            }
+        }
+
+        if (obj.location) {
+            candidates = candidates.filter((candidate) =>
+                findCandidates(
+                    obj.location.entity.object,
+                    state,
+                    candidate.findRelated(state.stacks, obj.location.relation)
+                ).length > 0)
+        }
+
+        return candidates.map((candidate) => candidate.id);
+    }
 }
 

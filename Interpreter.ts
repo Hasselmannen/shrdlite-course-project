@@ -115,16 +115,11 @@ module Interpreter {
                 var entities: string[] = findCandidates(cmd.entity.object, state);
                 if (entities.length < 1) throw "No such entity found."
                 switch (cmd.entity.quantifier) {
-                    case "any":
-                        //cmd.entity.
-                        break;
+                    case "any": break;
                     case "the":
                         if (entities.length > 1) throw "Ambiguous entity."
-
-
                         break;
-                    case "all":
-                        break;
+                    case "all": throw "Quantifier 'all' is not supported."
                 }
                 var relationTo: string[] = findCandidates(cmd.location.entity.object, state);
 
@@ -146,15 +141,6 @@ module Interpreter {
                 break;
         }
 
-/*
-        // This returns a dummy interpretation involving two random objects in the world
-        var objects: string[] = Array.prototype.concat.apply([], state.stacks);
-        var a: string = objects[Math.floor(Math.random() * objects.length)];
-        var b: string = objects[Math.floor(Math.random() * objects.length)];
-        interpretation = [[
-            { polarity: true, relation: "ontop", args: [a, "floor"] },
-            { polarity: true, relation: "holding", args: [b] }
-        ]];*/
         return interpretation;
     }
 
@@ -195,8 +181,6 @@ module Interpreter {
          * identifiers of objects which are positioned so that the relation
          * is satisfied.
          *
-         * TODO: Does not yet handle quantifiers or floors.
-         *
          * @param stacks The stacks of the world.
          * @param relation The positional relation of this object to other objects in the world.
          * @returns A list of identifiers that satisfy the relation.
@@ -210,7 +194,7 @@ module Interpreter {
                     return this.stack > 0 ? stacks[this.stack - 1] : [];
                 case "ontop":
                     return this.pos > 0 ?
-                        [stacks[this.stack][this.pos - 1]] : [];
+                        [stacks[this.stack][this.pos - 1]] : ["floor"];
                 case "under":
                     return stacks[this.stack].slice(
                         stacks[this.stack].indexOf(this.id) + 1);
@@ -236,6 +220,9 @@ module Interpreter {
      */
     function findCandidates(obj: Parser.Object, state: WorldState, ids?: string[]): string[] {
 
+        if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
+            return ["floor"];
+
         var candidates: Candidate[] = [];
         var keys: string[] = ids || Object.keys(state.objects);
 
@@ -246,7 +233,10 @@ module Interpreter {
             );
         }
 
-        for (var prop of ["color", "form", "size"]) {
+        var properties = ["color", "size"];
+        if (obj.form != "anyform") properties.push("form");
+
+        for (var prop of properties) {
             if (obj[prop]) {
                 candidates = candidates.filter((candidate) =>
                     state.objects[candidate.id][prop] == obj[prop]);
@@ -254,12 +244,21 @@ module Interpreter {
         }
 
         if (obj.location) {
-            candidates = candidates.filter((candidate) =>
-                findCandidates(
+            candidates = candidates.filter(function(candidate) {
+                var candidates = findCandidates(
                     obj.location.entity.object,
                     state,
                     candidate.findRelated(state.stacks, obj.location.relation)
-                ).length > 0)
+                );
+                switch (obj.location.entity.quantifier) {
+                    case "all": throw "Quantifier 'all' is not supported."
+                    case "the":
+                        if (candidates.length > 1) throw "Ambiguous entity."
+                        break;
+                    default: break;
+                }
+                return !!candidates.length;
+            });
         }
 
         return candidates.map((candidate) => candidate.id);

@@ -1,8 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
 
-///<reference path ="ExampleWorlds.ts"/>
-
 /**
 * Interpreter module
 *
@@ -109,21 +107,38 @@ module Interpreter {
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
 
+        var interpretation: DNFFormula = [];
+
         switch (cmd.command) {
             case "move":
                 if (!cmd.entity) throw "No entity specified in move.";
                 var entities: string[] = findCandidates(cmd.entity.object, state);
+                if (entities.length < 1) throw "No such entity found."
                 switch (cmd.entity.quantifier) {
                     case "any":
                         //cmd.entity.
                         break;
                     case "the":
-                        if (entities.length < 1) throw "No such entity found."
                         if (entities.length > 1) throw "Ambiguous entity."
+
+
                         break;
                     case "all":
                         break;
                 }
+                var relationTo: string[] = findCandidates(cmd.location.entity.object, state);
+
+                for (var entity of entities) {
+                    for (var relativeTo of relationTo) {
+                        if (entity == relativeTo) continue;
+                        interpretation.push([
+                            { polarity : true,
+                              relation : cmd.location.relation,
+                              args     : [entity, relativeTo] }
+                        ]);
+                    }
+                }
+
                 break;
             case "put":
                 break;
@@ -131,19 +146,17 @@ module Interpreter {
                 break;
         }
 
-
-
+/*
         // This returns a dummy interpretation involving two random objects in the world
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula = [[
+        interpretation = [[
             { polarity: true, relation: "ontop", args: [a, "floor"] },
             { polarity: true, relation: "holding", args: [b] }
-        ]];
+        ]];*/
         return interpretation;
     }
-
 
 
 
@@ -252,4 +265,3 @@ module Interpreter {
         return candidates.map((candidate) => candidate.id);
     }
 }
-

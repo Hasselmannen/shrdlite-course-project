@@ -136,8 +136,25 @@ module Interpreter {
 
                 break;
             case "put":
-                break;
+                throw "not yet implemented."
+//                break;
             case "take":
+                var entities: string[] = findCandidates(cmd.entity.object, state);
+                if (entities.length < 1) throw "No such entity found."
+                switch (cmd.entity.quantifier) {
+                    case "any": break;
+                    case "the":
+                        if (entities.length > 1) throw "Ambiguous entity."
+                        break;
+                    case "all": throw "Quantifier 'all' is not supported."
+                }
+                for (var entity of entities) {
+                    interpretation.push([
+                        { polarity : true,
+                          relation : "holding",
+                          args     : [entity]}
+                    ]);
+                }
                 break;
         }
 
@@ -206,6 +223,7 @@ module Interpreter {
                 case "above":
                     return stacks[this.stack].slice(
                         0, stacks[this.stack].indexOf(this.id) - 1);
+                default: throw "Not implemented: " + relation
             }
         }
     }
@@ -228,6 +246,7 @@ module Interpreter {
 
         for (var id of keys) {
             var stack: number = findStack(id, state.stacks);
+            if (stack === -1) continue;
             candidates.push(
                 new Candidate(id, stack, state.stacks[stack].indexOf(id))
             );
@@ -237,9 +256,12 @@ module Interpreter {
         if (obj.form != "anyform") properties.push("form");
 
         for (var prop of properties) {
-            if (obj[prop]) {
-                candidates = candidates.filter((candidate) =>
-                    state.objects[candidate.id][prop] == obj[prop]);
+            let lhs: string = (<any>obj)[prop];
+            if (lhs) {
+                candidates = candidates.filter(function(candidate) {
+                    let rhs: string = (<any>state.objects[candidate.id])[prop];
+                    return lhs == rhs;
+                });
             }
         }
 
@@ -250,6 +272,9 @@ module Interpreter {
                     state,
                     candidate.findRelated(state.stacks, obj.location.relation)
                 );
+
+                // TODO: Filter out relations that do no adhere to the laws of physics
+
                 switch (obj.location.entity.quantifier) {
                     case "all": throw "Quantifier 'all' is not supported."
                     case "the":

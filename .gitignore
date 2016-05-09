@@ -2,5 +2,6 @@ shrdlite-*.js
 doc
 Test.js
 TestAStar.js
+TestInterpreter.js
 node_modules
 lib/collections.js

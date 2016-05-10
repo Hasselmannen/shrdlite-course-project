@@ -219,11 +219,12 @@ module Interpreter {
          */
         findRelated(stacks: string[][], relation: string): string[] {
             switch (relation) {
-                case "leftof": // TODO: Should return candidates from ALL stacks to the right
+                case "leftof":
                     return this.stack < stacks.length ?
-                        stacks[this.stack + 1] : [];
-                case "rightof": // TODO: Should return candidates from ALL stacks to the left
-                    return this.stack > 0 ? stacks[this.stack - 1] : [];
+                        [].concat(stacks.slice(this.stack + 1)) : [];
+                case "rightof":
+                    return this.stack > 0 ?
+                        [].concat(stacks.slice(0, this.stack - 1)) : [];
                 case "inside":
                     return [stacks[this.stack][this.pos - 1]];
                 case "ontop":

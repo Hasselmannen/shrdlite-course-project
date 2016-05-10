@@ -111,29 +111,44 @@ module Interpreter {
 
         switch (cmd.command) {
             case "move":
-                if (!cmd.entity) throw "No entity specified in move.";
-                var entities: string[] = findCandidates(cmd.entity.object, state);
-                if (entities.length < 1) throw "No such entity found."
-                switch (cmd.entity.quantifier) {
-                    case "any": break;
-                    case "the":
-                        if (entities.length > 1) throw "Ambiguous entity."
-                        break;
-                    case "all": throw "Quantifier 'all' is not supported."
-                }
-                var relationTo: string[] = findCandidates(cmd.location.entity.object, state);
-
-                for (var entity of entities) {
-                    for (var relativeTo of relationTo) {
-                        if (entity == relativeTo) continue;
-                        interpretation.push([
-                            { polarity : true,
-                              relation : cmd.location.relation,
-                              args     : [entity, relativeTo] }
-                        ]);
+                    if (!cmd.entity) throw "No entity specified in move.";
+                    var entities: string[] = findCandidates(cmd.entity.object, state);
+                    //                console.log(entities);
+                    if (entities.length < 1) throw "No such entity found."
+                    switch (cmd.entity.quantifier) {
+                        case "any": break;
+                        case "the":
+                            if (entities.length > 1) throw "Ambiguous entity."
+                            break;
+                        case "all": throw "Quantifier 'all' is not supported."
                     }
-                }
 
+                    var relationTo: string[];
+                    if (cmd.location.entity.object.form == "floor") {
+                        relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
+                    }
+                    else {
+                        relationTo = findCandidates(cmd.location.entity.object, state);
+                    }
+                    for (var entity of entities) {
+                        for (var relativeTo of relationTo) {
+                            if (entity == relativeTo) continue;
+                            if (isValidRelation(
+                                state.objects[entity],
+                                cmd.location.relation,
+                                relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                            ) {
+                                interpretation.push([
+                                    {
+                                        polarity: true,
+                                        relation: cmd.location.relation,
+                                        args: [entity, relativeTo]
+                                    }
+                                ]);
+                            }
+                        }
+                    }
+                    if (interpretation.length <= 0) throw "No valid solution found for the utterance."
                 break;
             case "put":
                 throw "not yet implemented."
@@ -204,11 +219,13 @@ module Interpreter {
          */
         findRelated(stacks: string[][], relation: string): string[] {
             switch (relation) {
-                case "leftof":
+                case "leftof": // TODO: Should return candidates from ALL stacks to the right
                     return this.stack < stacks.length ?
                         stacks[this.stack + 1] : [];
-                case "rightof":
+                case "rightof": // TODO: Should return candidates from ALL stacks to the left
                     return this.stack > 0 ? stacks[this.stack - 1] : [];
+                case "inside":
+                    return [stacks[this.stack][this.pos - 1]];
                 case "ontop":
                     return this.pos > 0 ?
                         [stacks[this.stack][this.pos - 1]] : ["floor"];
@@ -237,7 +254,6 @@ module Interpreter {
      * @returns A list of candidates that satisfy the description of the object.
      */
     function findCandidates(obj: Parser.Object, state: WorldState, ids?: string[]): string[] {
-
         if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
             return ["floor"];
 
@@ -253,10 +269,9 @@ module Interpreter {
         }
 
         var properties = ["color", "size"];
-        if (obj.form != "anyform") properties.push("form");
-
+        if (obj.form != "anyform" && (!obj.object || obj.object.form != "anyform")) properties.push("form");
         for (var prop of properties) {
-            let lhs: string = (<any>obj)[prop];
+            var lhs: string = obj.object ? (<any>obj.object)[prop] : (<any>obj)[prop];
             if (lhs) {
                 candidates = candidates.filter(function(candidate) {
                     let rhs: string = (<any>state.objects[candidate.id])[prop];
@@ -273,8 +288,6 @@ module Interpreter {
                     candidate.findRelated(state.stacks, obj.location.relation)
                 );
 
-                // TODO: Filter out relations that do no adhere to the laws of physics
-
                 switch (obj.location.entity.quantifier) {
                     case "all": throw "Quantifier 'all' is not supported."
                     case "the":
@@ -287,5 +300,29 @@ module Interpreter {
         }
 
         return candidates.map((candidate) => candidate.id);
+    }
+
+    // TODO: More information needs to be taken into account (e.g. if there exist objects such that a ball can be put above a table)
+    function isValidRelation(lhs: { form?: string, size?: string }, relation: string, rhs: { form?: string, size?: string }): boolean {
+        if (relation == "ontop") {
+            if (rhs.form == "box" || rhs.form == "ball") return false;
+            if (lhs.form == "ball" && rhs.form != "floor") return false;
+            if (lhs.size == "large" && rhs.size == "small") return false;
+            if (lhs.form == "box" && rhs.size == "small" && (rhs.form == "brick" || rhs.form == "pyramid")) return false;
+            if (lhs.form == "box" && lhs.size == "large" && rhs.form == "pyramid") return false;
+        }
+        else if (relation == "inside") {
+            if (rhs.form != "box") return false;
+            if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick")) return false;
+            if (rhs.size == "small" && lhs.size == "large") return false;
+        }
+        else if (relation == "above") {
+            if (rhs.form == "ball") return false;
+            if (lhs.size == "large" && rhs.size == "small") return false;
+        }
+        else if (relation == "under") {
+            isValidRelation(rhs, "above", lhs);
+        }
+        return true;
     }
 }

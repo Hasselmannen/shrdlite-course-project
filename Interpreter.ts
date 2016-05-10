@@ -321,7 +321,7 @@ module Interpreter {
             if (lhs.size == "large" && rhs.size == "small") return false;
         }
         else if (relation == "under") {
-            isValidRelation(rhs, "above", lhs);
+            return isValidRelation(rhs, "above", lhs);
         }
         return true;
     }

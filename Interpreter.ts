@@ -109,20 +109,18 @@ module Interpreter {
 
         var interpretation: DNFFormula = [];
 
+        if (!cmd.entity) throw "No entity specified in move.";
+        var entities: string[] = findCandidates(cmd.entity.object, state);
+        if (entities.length < 1) throw "No such entity found."
+        switch (cmd.entity.quantifier) {
+            case "any": break;
+            case "the":
+                if (entities.length > 1) throw "Ambiguous entity."
+                break;
+            case "all": throw "Quantifier 'all' is not supported."
+        }
         switch (cmd.command) {
             case "move":
-                    if (!cmd.entity) throw "No entity specified in move.";
-                    var entities: string[] = findCandidates(cmd.entity.object, state);
-                    //                console.log(entities);
-                    if (entities.length < 1) throw "No such entity found."
-                    switch (cmd.entity.quantifier) {
-                        case "any": break;
-                        case "the":
-                            if (entities.length > 1) throw "Ambiguous entity."
-                            break;
-                        case "all": throw "Quantifier 'all' is not supported."
-                    }
-
                     var relationTo: string[];
                     if (cmd.location.entity.object.form == "floor") {
                         relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
@@ -150,19 +148,7 @@ module Interpreter {
                     }
                     if (interpretation.length <= 0) throw "No valid solution found for the utterance."
                 break;
-            case "put":
-                throw "not yet implemented."
-//                break;
             case "take":
-                var entities: string[] = findCandidates(cmd.entity.object, state);
-                if (entities.length < 1) throw "No such entity found."
-                switch (cmd.entity.quantifier) {
-                    case "any": break;
-                    case "the":
-                        if (entities.length > 1) throw "Ambiguous entity."
-                        break;
-                    case "all": throw "Quantifier 'all' is not supported."
-                }
                 for (var entity of entities) {
                     interpretation.push([
                         { polarity : true,
@@ -303,7 +289,15 @@ module Interpreter {
         return candidates.map((candidate) => candidate.id);
     }
 
-    // TODO: More information needs to be taken into account (e.g. if there exist objects such that a ball can be put above a table)
+    // TODO: More information needs to be taken into account
+    /**
+     * Checks whether or not an object can have a relation with another object.
+     *
+     *@param lhs The object that has a relation with another object.
+     *@param relation The of lhs in regards to rhs.
+     *@param rhs The object to which lhs is related.
+     *@returns True if the relation is possible for the two objects, false otherwise.
+     */
     function isValidRelation(lhs: { form?: string, size?: string }, relation: string, rhs: { form?: string, size?: string }): boolean {
         if (relation == "ontop") {
             if (rhs.form == "box" || rhs.form == "ball") return false;

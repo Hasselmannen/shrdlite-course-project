@@ -35,12 +35,12 @@ module Interpreter {
     * @param currentState The current state of the world.
     * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
     */
-    export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
-        var errors: Error[] = [];
-        var interpretations: InterpretationResult[] = [];
+    export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
+        var errors : Error[] = [];
+        var interpretations : InterpretationResult[] = [];
         parses.forEach((parseresult) => {
             try {
-                var result: InterpretationResult = <InterpretationResult>parseresult;
+                var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
             } catch (err) {
@@ -56,7 +56,7 @@ module Interpreter {
     }
 
     export interface InterpretationResult extends Parser.ParseResult {
-        interpretation: DNFFormula;
+        interpretation : DNFFormula;
     }
 
     export type DNFFormula = Conjunction[];
@@ -73,22 +73,22 @@ module Interpreter {
          * literal {polarity: false, relation: "ontop", args:
          * ["a","b"]}.
          */
-        polarity: boolean;
+        polarity : boolean;
         /** The name of the relation in question. */
-        relation: string;
+        relation : string;
         /** The arguments to the relation. Usually these will be either objects
          * or special strings such as "floor" or "floor-N" (where N is a column) */
-        args: string[];
+        args : string[];
     }
 
-    export function stringify(result: InterpretationResult): string {
+    export function stringify(result : InterpretationResult) : string {
         return result.interpretation.map((literals) => {
             return literals.map((lit) => stringifyLiteral(lit)).join(" & ");
             // return literals.map(stringifyLiteral).join(" & ");
         }).join(" | ");
     }
 
-    export function stringifyLiteral(lit: Literal): string {
+    export function stringifyLiteral(lit : Literal) : string {
         return (lit.polarity ? "" : "-") + lit.relation + "(" + lit.args.join(",") + ")";
     }
 
@@ -105,65 +105,65 @@ module Interpreter {
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
-    function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
+    function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
+        console.log(cmd);
+        var interpretation : DNFFormula = [];
 
-        var interpretation: DNFFormula = [];
-
-        if (!cmd.entity) throw "No entity specified in move.";
-        var entities: string[] = findCandidates(cmd.entity.object, state);
-        if (entities.length < 1) throw "No such entity found."
+        if (!cmd.entity) throw "No entity specified in move";
+        var entities : string[] = findCandidates(cmd.entity.object, state);
+        if (entities.length < 1) throw "No such entity found";
         switch (cmd.entity.quantifier) {
-            case "any": break;
-            case "the":
-                if (entities.length > 1) throw "Ambiguous entity."
-                break;
-            case "all": throw "Quantifier 'all' is not supported."
+        case "any":
+            break;
+        case "the":
+            if (entities.length > 1) throw "Ambiguous entity";
+            break;
+        case "all":
+            throw "Quantifier 'all' is not supported";
         }
         switch (cmd.command) {
-            case "move":
-                    var relationTo: string[];
-                    if (cmd.location.entity.object.form == "floor") {
-                        relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
-                    }
-                    else {
-                        relationTo = findCandidates(cmd.location.entity.object, state);
-                    }
-                    for (var entity of entities) {
-                        for (var relativeTo of relationTo) {
-                            if (entity == relativeTo) continue;
-                            if (isValidRelation(
-                                state.objects[entity],
-                                cmd.location.relation,
-                                relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-                            ) {
-                                interpretation.push([
-                                    {
-                                        polarity: true,
-                                        relation: cmd.location.relation,
-                                        args: [entity, relativeTo]
-                                    }
-                                ]);
+        case "move":
+            var relationTo : string[];
+            if (cmd.location.entity.object.form == "floor") {
+                relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
+            } else {
+                relationTo = findCandidates(cmd.location.entity.object, state);
+            }
+            for (var entity of entities) {
+                for (var relativeTo of relationTo) {
+                    if (entity == relativeTo) continue;
+                    if (isValidRelation(
+                            state.objects[entity],
+                            cmd.location.relation,
+                            relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                    ) {
+                        interpretation.push([
+                            {
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [entity, relativeTo]
                             }
-                        }
+                        ]);
                     }
-                    if (interpretation.length <= 0) throw "No valid solution found for the utterance."
-                break;
-            case "take":
-                for (var entity of entities) {
-                    interpretation.push([
-                        { polarity : true,
-                          relation : "holding",
-                          args     : [entity]}
-                    ]);
                 }
-                break;
+            }
+            if (interpretation.length <= 0) throw "No valid solution found for the utterance";
+            break;
+        case "take":
+            for (var entity of entities) {
+                interpretation.push([
+                    {
+                        polarity: true,
+                        relation: "holding",
+                        args: [entity]
+                    }
+                ]);
+            }
+            break;
         }
 
         return interpretation;
     }
-
-
-
 
     /**
      * Finds the index in the stack to which the given id belongs in the given
@@ -172,7 +172,7 @@ module Interpreter {
      * @param stacks The list of the world's stacks.
      * @returns The index of the stack to which the id belongs, or -1 if it could not be located.
      */
-    function findStack(id: string, stacks: string[][]): number {
+    function findStack(id : string, stacks : string[][]) : number {
         for (var i = stacks.length - 1; i >= 0; i--) {
             if (stacks[i].indexOf(id) !== -1) return i;
         }
@@ -203,31 +203,28 @@ module Interpreter {
          * @param relation The positional relation of this object to other objects in the world.
          * @returns A list of identifiers that satisfy the relation.
          */
-        findRelated(stacks: string[][], relation: string): string[] {
+        findRelated(stacks : string[][], relation : string) : string[] {
             switch (relation) {
-                case "leftof":
-                    return this.stack < stacks.length - 1 ?
-                        [].concat.apply([], stacks.slice(this.stack + 1)) : [];
-                case "rightof":
-                    return this.stack > 0 ?
-                        [].concat.apply([], stacks.slice(0, this.stack - 1)) : [];
-                case "inside":
-                    return [stacks[this.stack][this.pos - 1]];
-                case "ontop":
-                    return this.pos > 0 ?
-                        [stacks[this.stack][this.pos - 1]] : ["floor"];
-                case "under":
-                    return stacks[this.stack].slice(
-                        stacks[this.stack].indexOf(this.id) + 1);
-                case "beside":
-                    return (this.stack > 0 ?
-                        stacks[this.stack - 1] : []).concat(
-                        this.stack < stacks.length - 1 ?
-                            stacks[this.stack + 1] : []);
-                case "above":
-                    return stacks[this.stack].slice(
-                        0, stacks[this.stack].indexOf(this.id) - 1);
-                default: throw "Not implemented: " + relation
+            case "leftof":
+                return this.stack < stacks.length - 1 ? [].concat.apply([], stacks.slice(this.stack + 1)) : [];
+            case "rightof":
+                return this.stack > 0 ? [].concat.apply([], stacks.slice(0, this.stack - 1)) : [];
+            case "inside":
+                return [stacks[this.stack][this.pos - 1]];
+            case "ontop":
+                return this.pos > 0 ? [stacks[this.stack][this.pos - 1]] : ["floor"];
+            case "under":
+                return stacks[this.stack].slice(
+                    stacks[this.stack].indexOf(this.id) + 1);
+            case "beside":
+                return (this.stack > 0 ? stacks[this.stack - 1] : []).concat(
+                    this.stack < stacks.length - 1 ? stacks[this.stack + 1] : []);
+            case "above":
+                return stacks[this.stack].slice(
+                    0,
+                    stacks[this.stack].indexOf(this.id) - 1);
+            default:
+                throw "Not implemented: " + relation;
             }
         }
     }
@@ -240,15 +237,15 @@ module Interpreter {
      * @param ids A list of identifiers to which to restrict the identification.
      * @returns A list of candidates that satisfy the description of the object.
      */
-    function findCandidates(obj: Parser.Object, state: WorldState, ids?: string[]): string[] {
+    function findCandidates(obj : Parser.Object, state : WorldState, ids? : string[]) : string[] {
         if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
             return ["floor"];
 
-        var candidates: Candidate[] = [];
-        var keys: string[] = ids || Object.keys(state.objects);
+        var candidates : Candidate[] = [];
+        var keys : string[] = ids || Object.keys(state.objects);
 
         for (var id of keys) {
-            var stack: number = findStack(id, state.stacks);
+            var stack : number = findStack(id, state.stacks);
             if (stack === -1) continue;
             candidates.push(
                 new Candidate(id, stack, state.stacks[stack].indexOf(id))
@@ -258,17 +255,17 @@ module Interpreter {
         var properties = ["color", "size"];
         if (obj.form != "anyform" && (!obj.object || obj.object.form != "anyform")) properties.push("form");
         for (var prop of properties) {
-            var lhs: string = obj.object ? (<any>obj.object)[prop] : (<any>obj)[prop];
+            var lhs : string = obj.object ? (<any>obj.object)[prop] : (<any>obj)[prop];
             if (lhs) {
-                candidates = candidates.filter(function(candidate) {
-                    let rhs: string = (<any>state.objects[candidate.id])[prop];
+                candidates = candidates.filter(candidate => {
+                    let rhs : string = (<any>state.objects[candidate.id])[prop];
                     return lhs == rhs;
                 });
             }
         }
 
         if (obj.location) {
-            candidates = candidates.filter(function(candidate) {
+            candidates = candidates.filter(candidate => {
                 var candidates = findCandidates(
                     obj.location.entity.object,
                     state,
@@ -276,11 +273,13 @@ module Interpreter {
                 );
 
                 switch (obj.location.entity.quantifier) {
-                    case "all": throw "Quantifier 'all' is not supported."
-                    case "the":
-                        if (candidates.length > 1) throw "Ambiguous entity."
-                        break;
-                    default: break;
+                case "all":
+                    throw "Quantifier 'all' is not supported";
+                case "the":
+                    if (candidates.length > 1) throw "Ambiguous entity";
+                    break;
+                default:
+                    break;
                 }
                 return !!candidates.length;
             });
@@ -298,24 +297,23 @@ module Interpreter {
      *@param rhs The object to which lhs is related.
      *@returns True if the relation is possible for the two objects, false otherwise.
      */
-    function isValidRelation(lhs: { form?: string, size?: string }, relation: string, rhs: { form?: string, size?: string }): boolean {
+    function isValidRelation(lhs : { form? : string, size? : string },
+        relation : string,
+        rhs : { form? : string, size? : string }) : boolean {
         if (relation == "ontop") {
             if (rhs.form == "box" || rhs.form == "ball") return false;
             if (lhs.form == "ball" && rhs.form != "floor") return false;
             if (lhs.size == "large" && rhs.size == "small") return false;
             if (lhs.form == "box" && rhs.size == "small" && (rhs.form == "brick" || rhs.form == "pyramid")) return false;
             if (lhs.form == "box" && lhs.size == "large" && rhs.form == "pyramid") return false;
-        }
-        else if (relation == "inside") {
+        } else if (relation == "inside") {
             if (rhs.form != "box") return false;
             if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick")) return false;
             if (rhs.size == "small" && lhs.size == "large") return false;
-        }
-        else if (relation == "above") {
+        } else if (relation == "above") {
             if (rhs.form == "ball") return false;
             if (lhs.size == "large" && rhs.size == "small") return false;
-        }
-        else if (relation == "under") {
+        } else if (relation == "under") {
             return isValidRelation(rhs, "above", lhs);
         }
         return true;

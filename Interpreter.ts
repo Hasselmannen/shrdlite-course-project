@@ -122,11 +122,9 @@ module Interpreter {
         var relationTo : string[];
 
         if (cmd.command == "move" || cmd.command == "put") {
-            if (cmd.location.entity.object.form == "floor") {
-                relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
-            } else {
-                relationTo = findCandidates(cmd.location.entity.object, state);
-            }
+            relationTo = cmd.location.entity.object.form == "floor" ?
+                findCandidates(cmd.location.entity.object, state, ["floor"]) :
+                findCandidates(cmd.location.entity.object, state)
         }
 
         if (cmd.command == "move") {

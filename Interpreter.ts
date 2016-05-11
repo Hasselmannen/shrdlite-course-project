@@ -106,36 +106,37 @@ module Interpreter {
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        console.log(cmd);
         var interpretation : DNFFormula = [];
 
-        if (!cmd.entity) throw "No entity specified in move";
-        var entities : string[] = findCandidates(cmd.entity.object, state);
-        if (entities.length < 1) throw "No such entity found";
-        switch (cmd.entity.quantifier) {
-        case "any":
-            break;
-        case "the":
-            if (entities.length > 1) throw "Ambiguous entity";
-            break;
-        case "all":
-            throw "Quantifier 'all' is not supported";
+        var entities : string[];
+
+        if (cmd.command == "move" || cmd.command == "take") {
+            if (!cmd.entity) throw "No entity specified in move";
+            entities = findCandidates(cmd.entity.object, state);
+            if (entities.length < 1) throw "No such entity found";
+
+            if (cmd.command == "the" && entities.length > 1) throw "Ambiguous entity";
+            else if (cmd.command == "all") throw "Quantifier 'all' is not supported";
         }
-        switch (cmd.command) {
-        case "move":
-            var relationTo : string[];
+
+        var relationTo : string[];
+
+        if (cmd.command == "move" || cmd.command == "put") {
             if (cmd.location.entity.object.form == "floor") {
                 relationTo = findCandidates(cmd.location.entity.object, state, ["floor"]);
             } else {
                 relationTo = findCandidates(cmd.location.entity.object, state);
             }
+        }
+
+        if (cmd.command == "move") {
             for (var entity of entities) {
                 for (var relativeTo of relationTo) {
                     if (entity == relativeTo) continue;
                     if (isValidRelation(
-                            state.objects[entity],
-                            cmd.location.relation,
-                            relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                        state.objects[entity],
+                        cmd.location.relation,
+                        relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
                     ) {
                         interpretation.push([
                             {
@@ -147,9 +148,7 @@ module Interpreter {
                     }
                 }
             }
-            if (interpretation.length <= 0) throw "No valid solution found for the utterance";
-            break;
-        case "take":
+        } else if (cmd.command == "take") {
             for (var entity of entities) {
                 interpretation.push([
                     {
@@ -159,8 +158,27 @@ module Interpreter {
                     }
                 ]);
             }
-            break;
+        } else if (cmd.command == "put") {
+            if (!state.holding) throw "Not holding any object"
+            for (var relativeTo of relationTo) {
+                if (state.holding == relativeTo) continue;
+                if (isValidRelation(
+                    state.objects[state.holding],
+                    cmd.location.relation,
+                    relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                ) {
+                    interpretation.push([
+                        {
+                            polarity: true,
+                            relation: cmd.location.relation,
+                            args: [state.holding, relativeTo]
+                        }
+                    ]);
+                }
+            }
         }
+
+        if (interpretation.length <= 0) throw "No valid solution found for the utterance";
 
         return interpretation;
     }

@@ -175,28 +175,22 @@ module Planner {
      * @returns A goal function that returns true if a provided node satisfies the interpretation.
      */
     function goal(interpretation : Interpreter.DNFFormula) : (node : SearchState) => boolean {
-        return (node) => {
-            return interpretation.some(
-                (conjunction : Interpreter.Literal[]) => {
-                    return conjunction.every(
-                        (literal : Interpreter.Literal) => {
-                            // Special case when holding an object
-                            if (literal.relation == "holding" && node.holding == literal.args[0]) return true;
+        return (node) => interpretation.some((conjunction) => {
+            return conjunction.every((literal) => {
+                // Special case when holding an object
+                if (literal.relation == "holding" && node.holding == literal.args[0]) return true;
 
-                            // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
-                            var id = literal.args[0];
-                            var stack : number = Util.findStack(id, node.stacks);
-                            var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
-                            var relation = literal.relation;
-                            var relativeTo = literal.args[1];
-                            var ids = entity.findRelated(node.stacks, relation);
-                            if (ids.indexOf(relativeTo) !== -1) return true;
-                            else return false;
-                        }
-                    );
-                }
-            );
-        }
+                // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
+                var id = literal.args[0];
+                var stack : number = Util.findStack(id, node.stacks);
+                var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
+                var relation = literal.relation;
+                var relativeTo = literal.args[1];
+                var ids = entity.findRelated(node.stacks, relation);
+                if (ids.indexOf(relativeTo) !== -1) return true;
+                else return false;
+            });
+        });
     }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {

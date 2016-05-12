@@ -2,6 +2,7 @@
 ///<reference path="Interpreter.ts"/>
 ///<reference path="Graph.ts"/>
 ///<reference path="lib/collections.ts"/>
+///<reference path="Util.ts" />
 
 /**
 * Planner module
@@ -105,8 +106,8 @@ module Planner {
 
                             // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                             var id = literal.args[0];
-                            var stack : number = Interpreter.findStack(id, node.stacks);
-                            var entity = new Interpreter.Candidate(id, stack, node.stacks[stack].indexOf(id));
+                            var stack : number = Util.findStack(id, node.stacks);
+                            var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
                             var relation = literal.relation;
                             var relativeTo = literal.args[1];
                             var ids = entity.findRelated(node.stacks, relation);
@@ -124,7 +125,7 @@ module Planner {
     }
 
     function convertPathToPlan(path : SearchResult<SearchState>) : string[] {
-        
+
         var plan : string[] = [];
 
         // Go through the whole path, for each node look at the current one and the next one to find the difference

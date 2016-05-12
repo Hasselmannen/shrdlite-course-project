@@ -180,7 +180,6 @@ module Interpreter {
 
         return interpretation;
     }
-
     /**
      * Finds the index in the stack to which the given id belongs in the given
      * list of stacks.

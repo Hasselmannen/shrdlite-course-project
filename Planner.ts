@@ -83,8 +83,8 @@ module Planner {
             // TODO: Implement this
             var edges: Edge<SearchState>[] = [];
             // Possible to move left?
-            if (node.arm > -1) {
-                var edge: Edge<SearchState>;
+            if (node.arm > 0) {
+                var edge = new Edge<SearchState>();
                 edge.from = node;
                 edge.to = new SearchState(
                     node.stacks.slice(),
@@ -95,8 +95,8 @@ module Planner {
                 edges.push(edge);
             }
             // Possible to move right?
-            if (node.arm < node.stacks.length) {
-                var edge: Edge<SearchState>;
+            if (node.arm < node.stacks.length -1) {
+                var edge = new Edge<SearchState>();
                 edge.from = node;
                 edge.to = new SearchState(
                     node.stacks.slice(),
@@ -107,8 +107,8 @@ module Planner {
                 edges.push(edge);
             }
             // Possible to pick upp object?
-            if (node.holding == null && node.stacks[node.arm].length > 0) {
-                var edge: Edge<SearchState>;
+            if (!node.holding && node.stacks[node.arm].length > 0) {
+                var edge = new Edge<SearchState>();
                 edge.from = node;
                 var tempStacks = node.stacks;
                 var hold: string = tempStacks[node.arm].pop();
@@ -121,11 +121,11 @@ module Planner {
                 edges.push(edge);
 
             // Holding something
-            } else if (node.holding != null) {
+            } else if (node.holding) {
                 if (node.stacks[node.arm].length == 0) { // If floor, we can drop object
-                    var edge: Edge<SearchState>;
+                    var edge = new Edge<SearchState>();
                     edge.from = node;
-                    var tempStacks = node.stacks;
+                    var tempStacks = node.stacks.slice();
                     tempStacks[node.arm].push(node.holding);
                     edge.to = new SearchState(
                         tempStacks,
@@ -143,9 +143,9 @@ module Planner {
                             {form:holdingData.form, size:holdingData.size},
                             "ontop",
                             {form:objectData.form, size:objectData.size})) {
-                        var edge: Edge<SearchState>;
+                        var edge = new Edge<SearchState>();
                         edge.from = node;
-                        var tempStacks = node.stacks;
+                        var tempStacks = node.stacks.slice();
                         tempStacks[node.arm].push(node.holding);
                         edge.to = new SearchState(
                             tempStacks,
@@ -159,7 +159,7 @@ module Planner {
                 }
             }
 
-            return null;
+            return edges;
         }
 
         compareNodes(lhs : SearchState, rhs : SearchState) : number {

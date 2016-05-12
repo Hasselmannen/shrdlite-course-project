@@ -75,47 +75,14 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-        // This function returns a dummy plan involving a random stack
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
+
         var plan : string[] = [];
 
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
-            }
-        } else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
-                plan.push("r");
-            }
-        }
+        // Fill with l(eft), r(ight), p(ick), d(rop) 
 
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
-        plan.push("Picking up the " + state.objects[obj].form,
-                  "p");
-
-        if (pickstack < state.stacks.length-1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length-1; i++) {
-                plan.push("r");
-            }
-
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length-1; i > pickstack; i--) {
-                plan.push("l");
-            }
-        }
-
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form,
-                  "d");
+        // If string is not command it will be printed to user.
+       
+        // plan.push()
 
         return plan;
     }

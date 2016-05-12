@@ -93,6 +93,14 @@ module Planner {
         return (node) => 0;
     }
 
+    function convertPathToPlan(path : SearchResult<SearchState>) : string[] {
+        var plan : string[] = [];
+
+        // TODO: Convert a path from A* to a plan (plan.push("l", "r", "p", "d"))
+
+        return plan;
+    }
+
     /**
      * The core planner function. The code here is just a template;
      * you should rewrite this function entirely. In this template,
@@ -124,17 +132,7 @@ module Planner {
         var path = aStarSearch<SearchState>(graph, initialState, goalFunc, heuristicsFunc, timeout);
 
         // Convert path to plan
-        // TODO: Convert path to plan
-
-        var plan : string[] = [];
-
-        // Fill with l(eft), r(ight), p(ick), d(rop)
-
-        // If string is not command it will be printed to user.
-
-        // plan.push()
-
-        return plan;
+        return convertPathToPlan(path);
     }
 
 }

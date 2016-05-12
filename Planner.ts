@@ -67,8 +67,10 @@ module Planner {
     }
 
     function worldToSearchState(worldState : WorldState) : SearchState {
-        // TODO: Implement initial conversion from WorldState to SearchState
-        return null;
+        return new SearchState(
+            worldState.stacks.slice(),
+            worldState.holding,
+            worldState.arm);
     }
 
     class SearchStateGraph implements Graph<SearchState> {

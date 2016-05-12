@@ -61,8 +61,8 @@ module Planner {
     class SearchState {
         constructor(
             public stacks : Stack[],
-            public holding : string,
-            public armIn : number
+            public holding : string, // Invariant: holding may not be empty string
+            public arm : number
         ) { }
     }
 
@@ -94,9 +94,38 @@ module Planner {
     }
 
     function convertPathToPlan(path : SearchResult<SearchState>) : string[] {
+        
         var plan : string[] = [];
 
-        // TODO: Convert a path from A* to a plan (plan.push("l", "r", "p", "d"))
+        // Go through the whole path, for each node look at the current one and the next one to find the difference
+        for (var i : number = 0; i < path.path.length - 1; ++i) {
+            var current = path.path[i];
+            var next = path.path[i+1];
+
+            // Check if arm moved left
+            if (current.arm > next.arm) {
+                plan.push("l");
+                continue;
+            }
+
+            // Check if arm moved right
+            if (current.arm < next.arm) {
+                plan.push("r");
+                continue;
+            }
+
+            // Check if arm picked up something
+            if (!current.holding && !!next.holding) {
+                plan.push("p");
+                continue;
+            }
+
+            // Check if arm dropped something
+            if (!!current.holding && !next.holding) {
+                plan.push("d");
+                continue;
+            }
+        }
 
         return plan;
     }

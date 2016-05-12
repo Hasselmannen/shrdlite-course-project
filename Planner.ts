@@ -1,5 +1,7 @@
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
+///<reference path="lib/collections.ts"/>
 
 /** 
 * Planner module
@@ -67,6 +69,20 @@ module Planner {
     function worldToSearchState(worldState : WorldState) : SearchState {
         // TODO: Implement initial conversion from WorldState to SearchState
         return null;
+    }
+
+    class SearchStateGraph implements Graph<SearchState> {
+
+        // TODO: Add members and constructors if necessary
+
+        outgoingEdges(node : SearchState) : Edge<SearchState>[] {
+            // TODO: Implement this
+            return null;
+        }
+
+        compareNodes(lhs : SearchState, rhs : SearchState) : number {
+            return 0; // Honestly, we probably really don't care about this function at all. Likely unusued.
+        }
     }
 
     /**

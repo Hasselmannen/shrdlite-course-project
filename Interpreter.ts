@@ -187,7 +187,7 @@ module Interpreter {
      * @param stacks The list of the world's stacks.
      * @returns The index of the stack to which the id belongs, or -1 if it could not be located.
      */
-    function findStack(id : string, stacks : Stack[]) : number {
+    export function findStack(id : string, stacks : Stack[]) : number {
         for (var i = stacks.length - 1; i >= 0; i--) {
             if (stacks[i].indexOf(id) !== -1) return i;
         }
@@ -197,7 +197,7 @@ module Interpreter {
     /**
      * A class containing positional data about an object in a world.
      */
-    class Candidate {
+    export class Candidate {
         /**
          * @param id The unique identifer of the object.
          * @param stack The index of the stack to which this object belongs.

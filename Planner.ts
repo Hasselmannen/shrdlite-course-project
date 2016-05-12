@@ -87,8 +87,36 @@ module Planner {
         }
     }
 
+    /**
+     * A function that, given an interpretation, supplies a goal function which in
+     * turn can check whether or not a node is a goal state.
+     *
+     * @param interpretation A disjunction of conjunctions describing what is required for a goal state.
+     * @returns A goal function that returns true if a provided node satisfies the interpretation.
+     */
     function goal(interpretation : Interpreter.DNFFormula) : (node : SearchState) => boolean {
-        return (node) => false;
+        return (node) => {
+            return interpretation.some(
+                (conjunction : Interpreter.Literal[]) => {
+                    return conjunction.every(
+                        (literal : Interpreter.Literal) => {
+                            // Special case when holding an object
+                            if (literal.relation == "holding" && node.holding == literal.args[0]) return true;
+
+                            // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
+                            var id = literal.args[0];
+                            var stack : number = Interpreter.findStack(id, node.stacks);
+                            var entity = new Interpreter.Candidate(id, stack, node.stacks[stack].indexOf(id));
+                            var relation = literal.relation;
+                            var relativeTo = literal.args[1];
+                            var ids = entity.findRelated(node.stacks, relation);
+                            if (ids.indexOf(relativeTo) !== -1) return true;
+                            else return false;
+                        }
+                    );
+                }
+            );
+        }
     }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {

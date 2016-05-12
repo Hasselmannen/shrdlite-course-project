@@ -76,10 +76,89 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        // TODO: Add members and constructors if necessary
+        constructor(private worldObjects: {[s:string]: ObjectDefinition}){ }
+        // TODO: Add members if necessary
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             // TODO: Implement this
+            var edges: Edge<SearchState>[] = [];
+            // Possible to move left?
+            if (node.arm > -1) {
+                var edge: Edge<SearchState>;
+                edge.from = node;
+                edge.to = new SearchState(
+                    node.stacks.slice(),
+                    node.holding,
+                    node.arm - 1);
+                edge.cost = 1; //TODO maybe change this later
+
+                edges.push(edge);
+            }
+            // Possible to move right?
+            if (node.arm < node.stacks.length) {
+                var edge: Edge<SearchState>;
+                edge.from = node;
+                edge.to = new SearchState(
+                    node.stacks.slice(),
+                    node.holding,
+                    node.arm + 1);
+                edge.cost = 1; //TODO maybe change this later
+
+                edges.push(edge);
+            }
+            // Possible to pick upp object?
+            if (node.holding == null && node.stacks[node.arm].length > 0) {
+                var edge: Edge<SearchState>;
+                edge.from = node;
+                var tempStacks = node.stacks;
+                var hold: string = tempStacks[node.arm].pop();
+                edge.to = new SearchState(
+                    tempStacks,
+                    hold,
+                    node.arm);
+                edge.cost = 1; //TODO maybe change this later
+
+                edges.push(edge);
+
+            // Holding something
+            } else if (node.holding != null) {
+                if (node.stacks[node.arm].length == 0) { // If floor, we can drop object
+                    var edge: Edge<SearchState>;
+                    edge.from = node;
+                    var tempStacks = node.stacks;
+                    tempStacks[node.arm].push(node.holding);
+                    edge.to = new SearchState(
+                        tempStacks,
+                        null,
+                        node.arm);
+                    edge.cost = 1; //TODO maybe change this later
+
+                    edges.push(edge);
+                } else {
+                    var topmostObject: string = 
+                        node.stacks[node.arm][node.stacks.length-1];
+                    var objectData: ObjectDefinition = this.worldObjects[topmostObject];
+                    var holdingData: ObjectDefinition = this.worldObjects[node.holding];
+                    if (Util.isValidRelation(
+                            {form:holdingData.form, size:holdingData.size},
+                            "ontop",
+                            {form:objectData.form, size:objectData.size})) {
+                        var edge: Edge<SearchState>;
+                        edge.from = node;
+                        var tempStacks = node.stacks;
+                        tempStacks[node.arm].push(node.holding);
+                        edge.to = new SearchState(
+                            tempStacks,
+                            null,
+                            node.arm);
+                        edge.cost = 1; //TODO maybe change this later
+
+                        edges.push(edge);
+                    }
+
+                }
+            }
+
             return null;
         }
 
@@ -183,7 +262,7 @@ module Planner {
 
         // Create parameters for a* search
         var initialState = worldToSearchState(state);
-        var graph = new SearchStateGraph();
+        var graph = new SearchStateGraph(state.objects);
         var goalFunc = goal(interpretation);
         var heuristicsFunc = heuristics(interpretation);
         var timeout = 60; // 1 minute should be enough for anyone :v

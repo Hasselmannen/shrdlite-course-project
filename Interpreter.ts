@@ -312,7 +312,7 @@ module Interpreter {
      *@param rhs The object to which lhs is related.
      *@returns True if the relation is possible for the two objects, false otherwise.
      */
-    function isValidRelation(lhs : { form? : string, size? : string },
+    export function isValidRelation(lhs : { form? : string, size? : string },
         relation : string,
         rhs : { form? : string, size? : string }) : boolean {
         if (relation == "ontop") {

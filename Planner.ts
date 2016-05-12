@@ -56,6 +56,19 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
+    class SearchState {
+        constructor(
+            public stacks : Stack[],
+            public holding : string,
+            public armIn : number
+        ) { }
+    }
+
+    function worldToSearchState(worldState : WorldState) : SearchState {
+        // TODO: Implement initial conversion from WorldState to SearchState
+        return null;
+    }
+
     /**
      * The core planner function. The code here is just a template;
      * you should rewrite this function entirely. In this template,

@@ -187,9 +187,6 @@ module Planner {
                     if (literal.args[0] == node.holding) return true;
                     else return false;
                 }
-                if (literal.args[1] == "floor" && literal.relation == "ontop") {
-                    return node.stacks.some((stack) => stack[0] == "floor");
-                }
 
                 // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                 var id = literal.args[0];
@@ -209,7 +206,34 @@ module Planner {
 //function goal(interpretation : Interpreter.DNFFormula) : (node : SearchState) => boolean { return (node) => false; }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
-        return (node) => 0;
+        return (node) => {
+            // Care only about the heuristic to the 'closest' goal.
+            return Math.min.apply(null, interpretation.map((conjunction) => {
+                // Add together the heuristic for each part of the conjunction
+                return conjunction.map((literal) => {
+                    switch(literal.relation) {
+                    case "holding": // The number of moves the arm needs to reach the object, plus one for picking it up
+                        var pos = Util.findStack(literal.args[0], node.stacks);
+                        return pos == -1 ? 0 : Math.abs(pos - node.arm) + 1;
+                    case "leftof": // Distance that the an object has to be moved to be left of another object
+                        var pos1 = Util.findStack(literal.args[0], node.stacks);
+                        var pos2 = Util.findStack(literal.args[1], node.stacks);
+                        pos1 = pos1 == -1 ? node.arm : pos1;
+                        pos2 = pos2 == -1 ? node.arm : pos2;
+                        // Distance plus one because it has to be left of the stack,
+                        // and another plus one because it has to at least be dropped
+                        return pos1 < pos2 ? 0 : pos1 - pos2 + 2;
+                    case "rightof":
+                        var pos1 = Util.findStack(literal.args[0], node.stacks);
+                        var pos2 = Util.findStack(literal.args[1], node.stacks);
+                        pos1 = pos1 == -1 ? node.arm : pos1;
+                        pos2 = pos2 == -1 ? node.arm : pos2;
+                        return pos1 > pos2 ? 0 : pos2 - pos1 + 2;
+                    default: return 0;
+                    }
+                }).reduce((prev, curr) => prev + curr); // Recursively add together the results.
+            }));
+        };
     }
 
     function convertPathToPlan(path : SearchResult<SearchState>) : string[] {

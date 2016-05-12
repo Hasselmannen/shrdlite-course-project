@@ -89,7 +89,7 @@ function aStarSearch<Node> (
     }
 
     // Keep track of visited nodes and the frontier
-    var visited = new collections.Set<Node>();
+    var visited = new collections.Set<Node>(JSON.stringify);
     var frontier = new collections.PriorityQueue<FrontierNode>(FrontierNode.compare);
     frontier.enqueue(new FrontierNode(start, null, 0));
 

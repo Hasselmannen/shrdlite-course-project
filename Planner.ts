@@ -69,14 +69,14 @@ module Planner {
 
     function worldToSearchState(worldState : WorldState) : SearchState {
         return new SearchState(
-            worldState.stacks.slice(),
+            worldState.stacks.map((stack) => stack.slice()),
             worldState.holding,
             worldState.arm);
     }
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        constructor(private worldObjects: {[s:string]: ObjectDefinition}){ }
+        constructor(public worldObjects: {[s:string]: ObjectDefinition}){ }
         // TODO: Add members if necessary
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
@@ -87,7 +87,7 @@ module Planner {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
                 edge.to = new SearchState(
-                    node.stacks.slice(),
+                    node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm - 1);
                 edge.cost = 1; //TODO maybe change this later
@@ -99,7 +99,7 @@ module Planner {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
                 edge.to = new SearchState(
-                    node.stacks.slice(),
+                    node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm + 1);
                 edge.cost = 1; //TODO maybe change this later
@@ -110,7 +110,7 @@ module Planner {
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
-                var tempStacks = node.stacks;
+                var tempStacks = node.stacks.map((stack) => stack.slice());
                 var hold: string = tempStacks[node.arm].pop();
                 edge.to = new SearchState(
                     tempStacks,
@@ -125,7 +125,7 @@ module Planner {
                 if (node.stacks[node.arm].length == 0) { // If floor, we can drop object
                     var edge = new Edge<SearchState>();
                     edge.from = node;
-                    var tempStacks = node.stacks.slice();
+                    var tempStacks = node.stacks.map((stack) => stack.slice());
                     tempStacks[node.arm].push(node.holding);
                     edge.to = new SearchState(
                         tempStacks,
@@ -135,8 +135,8 @@ module Planner {
 
                     edges.push(edge);
                 } else {
-                    var topmostObject: string = 
-                        node.stacks[node.arm][node.stacks.length-1];
+                    var topmostObject: string =
+                        node.stacks[node.arm][node.stacks[node.arm].length-1];
                     var objectData: ObjectDefinition = this.worldObjects[topmostObject];
                     var holdingData: ObjectDefinition = this.worldObjects[node.holding];
                     if (Util.isValidRelation(
@@ -145,7 +145,7 @@ module Planner {
                             {form:objectData.form, size:objectData.size})) {
                         var edge = new Edge<SearchState>();
                         edge.from = node;
-                        var tempStacks = node.stacks.slice();
+                        var tempStacks = node.stacks.map((stack) => stack.slice());
                         tempStacks[node.arm].push(node.holding);
                         edge.to = new SearchState(
                             tempStacks,
@@ -157,8 +157,8 @@ module Planner {
                     }
 
                 }
-            }
 
+            }
             return edges;
         }
 
@@ -178,10 +178,17 @@ module Planner {
         return (node) => interpretation.some((conjunction) => {
             return conjunction.every((literal) => {
                 // Special case when holding an object
-                if (literal.relation == "holding" && node.holding == literal.args[0]) return true;
+                if (literal.relation == "holding") {
+                    if (literal.args[0] == node.holding) return true;
+                    else return false;
+                }
+                if (literal.args[1] == "floor" && literal.relation == "ontop") {
+                    return node.stacks.some((stack) => stack[0] == "floor");
+                }
 
                 // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                 var id = literal.args[0];
+
                 var stack : number = Util.findStack(id, node.stacks);
                 var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
                 var relation = literal.relation;
@@ -192,6 +199,8 @@ module Planner {
             });
         });
     }
+
+//function goal(interpretation : Interpreter.DNFFormula) : (node : SearchState) => boolean { return (node) => false; }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
         return (node) => 0;

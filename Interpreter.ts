@@ -184,6 +184,7 @@ module Interpreter {
         return interpretation;
     }
 
+    // TODO: possibly add support for reffering to the object that the arm is currently holding.
     /**
      * Identifies which objects in the world that satisfy a given description of an object.
      *

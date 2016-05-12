@@ -80,6 +80,10 @@ module Planner {
         // TODO: Add members if necessary
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
+
+            console.log("Edgestuff: " + node.stacks + " holding: " + node.holding);
+
+
             // TODO: Implement this
             var edges: Edge<SearchState>[] = [];
             // Possible to move left?
@@ -139,9 +143,10 @@ module Planner {
                         node.stacks[node.arm][node.stacks[node.arm].length-1];
                     var objectData: ObjectDefinition = this.worldObjects[topmostObject];
                     var holdingData: ObjectDefinition = this.worldObjects[node.holding];
+                    var relation = objectData.form == "box" ? "inside" : "ontop";
                     if (Util.isValidRelation(
                             {form:holdingData.form, size:holdingData.size},
-                            "ontop",
+                            relation,
                             {form:objectData.form, size:objectData.size})) {
                         var edge = new Edge<SearchState>();
                         edge.from = node;
@@ -188,6 +193,7 @@ module Planner {
 
                 // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                 var id = literal.args[0];
+                if (id == node.holding) return false;
 
                 var stack : number = Util.findStack(id, node.stacks);
                 var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));

@@ -80,10 +80,6 @@ module Planner {
         // TODO: Add members if necessary
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
-
-            console.log("Edgestuff: " + node.stacks + " holding: " + node.holding);
-
-
             // TODO: Implement this
             var edges: Edge<SearchState>[] = [];
             // Possible to move left?

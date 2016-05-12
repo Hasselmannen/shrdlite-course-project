@@ -113,6 +113,10 @@ module Interpreter {
 
         var entities : string[];
 
+        // TODO: Not sure if required or not: Allow a more flexible location description
+        // (right now it will search for objects fulfilling the description,
+        // it won't try to create a destination that fulfills it if one does not already exist)
+
         if (cmd.command == "move" || cmd.command == "take") {
             if (!cmd.entity) throw "No entity specified in move";
             entities = findCandidates(cmd.entity.object, state);

@@ -133,7 +133,6 @@ ExampleWorlds["impossible"] = {
     ]
 };
 
-/*
 // The world used in the example on the course webpage
 ExampleWorlds["example"] = {
     "stacks": [["c1"],["t3","b4"],[],["b5","b6","c2"],[]],
@@ -151,4 +150,3 @@ ExampleWorlds["example"] = {
         "put the white ball in a box on the floor"
     ]
 };
-*/

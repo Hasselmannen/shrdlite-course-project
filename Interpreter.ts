@@ -186,16 +186,12 @@ module Interpreter {
     }
 
     // TODO: possibly add support for referring to the object that the arm is currently holding.
-    /**
-     * Identifies which objects in the world that satisfy a given description of an object.
-     *
-     * @param entity An entity description..
-     * @param state The state of the world.
-     * @param ids A list of identifiers to which to restrict the identification.
-     * @returns A list of candidates that satisfy the description of the object.
-     */
-    function findCandidates(entity : Parser.Entity, state : WorldState, ids? : string[]) : string[] {
-        var obj = entity.object;
+
+    function isCandidate(obj : string, descr : Parser.Entity, state : WorldState) : boolean {
+
+        // TODO: pls implement johan
+
+         var obj = entity.object;
         if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
             return ["floor"];
 
@@ -244,5 +240,47 @@ module Interpreter {
         }
 
         return candidates.map((candidate) => candidate.id);
+
+
+        return false;
+    }
+
+    /**
+     * Identifies which objects in the world that satisfy a given description of an object.
+     *
+     * @param descr An entity description
+     * @param state The state of the world.
+     * @param ids A list of identifiers to which to restrict the identification.
+     * @returns A list of candidates that satisfy the description of the object.
+     */
+    function findCandidates(descr : Parser.Entity, state : WorldState, ids? : string[]) : string[] {
+        var candidates : string[];
+
+        // Special case for floor (TODO: ???)
+        if (descr.object.form == "floor" && ids && ids.indexOf("floor") !== -1) return ["floor"];
+
+        // For each stack
+        for (var stack of state.stacks) {
+            
+            // For each object in stack
+            for (var obj of stack) {
+
+                // Skip object if it is not in list of potential candidates
+                if (ids && ids.indexOf(obj) !== -1) continue;
+
+                // Add to list of candidates if it is a candidate
+                if (isCandidate(obj, descr, state)) {
+                    candidates.push(obj);
+                }
+
+            }
+        }
+
+        // Special case for the object held by the arm
+        if (ids && ids.indexOf(state.holding) === -1 && isCandidate(state.holding, descr, state)) {
+            candidates.push(state.holding);
+        }
+
+        return candidates;
     }
 }

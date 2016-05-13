@@ -180,7 +180,7 @@ module Interpreter {
             }
         }
 
-        if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance")
+        if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
 
         return interpretation;
     }

@@ -36,7 +36,7 @@ module Planner {
                     result.plan.push("That is already true!");
                 }
                 plans.push(result);
-            } catch(err) {
+            } catch (err) {
                 errors.push(err);
             }
         });
@@ -76,12 +76,13 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        constructor(public worldObjects: {[s:string]: ObjectDefinition}){ }
+        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {}
+
         // TODO: Add members if necessary
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             // TODO: Implement this
-            var edges: Edge<SearchState>[] = [];
+            var edges : Edge<SearchState>[] = [];
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -95,7 +96,7 @@ module Planner {
                 edges.push(edge);
             }
             // Possible to move right?
-            if (node.arm < node.stacks.length -1) {
+            if (node.arm < node.stacks.length - 1) {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
                 edge.to = new SearchState(
@@ -111,7 +112,7 @@ module Planner {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
                 var tempStacks = node.stacks.map((stack) => stack.slice());
-                var hold: string = tempStacks[node.arm].pop();
+                var hold : string = tempStacks[node.arm].pop();
                 edge.to = new SearchState(
                     tempStacks,
                     hold,
@@ -135,15 +136,15 @@ module Planner {
 
                     edges.push(edge);
                 } else {
-                    var topmostObject: string =
-                        node.stacks[node.arm][node.stacks[node.arm].length-1];
-                    var objectData: ObjectDefinition = this.worldObjects[topmostObject];
-                    var holdingData: ObjectDefinition = this.worldObjects[node.holding];
+                    var topmostObject : string =
+                        node.stacks[node.arm][node.stacks[node.arm].length - 1];
+                    var objectData : ObjectDefinition = this.worldObjects[topmostObject];
+                    var holdingData : ObjectDefinition = this.worldObjects[node.holding];
                     var relation = objectData.form == "box" ? "inside" : "ontop";
                     if (Util.isValidRelation(
-                            {form:holdingData.form, size:holdingData.size},
-                            relation,
-                            {form:objectData.form, size:objectData.size})) {
+                        { form: holdingData.form, size: holdingData.size },
+                        relation,
+                        { form: objectData.form, size: objectData.size })) {
                         var edge = new Edge<SearchState>();
                         edge.from = node;
                         var tempStacks = node.stacks.map((stack) => stack.slice());
@@ -198,8 +199,6 @@ module Planner {
             });
         });
     }
-
-//function goal(interpretation : Interpreter.DNFFormula) : (node : SearchState) => boolean { return (node) => false; }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
         return (node) => {

@@ -185,64 +185,42 @@ module Interpreter {
         return interpretation;
     }
 
-    // TODO: possibly add support for referring to the object that the arm is currently holding.
-
-    function isCandidate(obj : string, descr : Parser.Entity, state : WorldState) : boolean {
-
-        // TODO: pls implement johan
-
-         var obj = entity.object;
-        if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
-            return ["floor"];
-
-        var candidates : Util.WorldObject[] = [];
-        var keys : string[] = ids || Object.keys(state.objects);
-
-        for (var id of keys) {
-            var stack : number = Util.findStack(id, state.stacks);
-            if (stack === -1) continue;
-            candidates.push(
-                new Util.WorldObject(id, stack, state.stacks[stack].indexOf(id))
-            );
-        }
+    /**
+     * Determines whether or not a proposed candidate is a valid candidate.
+     *
+     * @param obj Positional information about the candidate.
+     * @param descr A description of the candidate.
+     * @param state The state of the world.
+     * @returns True if the proposed candidate is valid.
+     */
+    function isCandidate(obj : Util.WorldObject, descr : Parser.Object, state : WorldState) : boolean {
 
         var properties = ["color", "size"];
-        if (obj.form != "anyform" && (!obj.object || obj.object.form != "anyform")) properties.push("form");
-        for (var prop of properties) {
-            var lhs : string = obj.object ? (<any>obj.object)[prop] : (<any>obj)[prop];
+        if (descr.form != "anyform" && (!descr.object || descr.object.form != "anyform"))
+            properties.push("form");
+
+        // Make sure that all defined properties hold for the object
+        var validProps : boolean = properties.every((prop) => {
+            var lhs : string = descr.object ? (<any>descr.object)[prop] : (<any>descr)[prop];
             if (lhs) {
-                candidates = candidates.filter(candidate => {
-                    let rhs : string = (<any>state.objects[candidate.id])[prop];
-                    return lhs == rhs;
-                });
+                let rhs : string = (<any>state.objects[obj.id])[prop];
+                return lhs == rhs;
             }
+            return true;
+        });
+        if (!validProps) return false;
+
+        // Make sure that, if a location is specified, it exists in the world,
+        var validLocation : boolean = true;
+        if (descr.location) {
+            var candidates = findCandidates(
+                descr.location.entity,
+                state,
+                obj.findRelated(state.stacks, descr.location.relation)
+            );
+            validLocation = !!candidates.length;
         }
-
-        if (obj.location) {
-            candidates = candidates.filter(candidate => {
-                var candidates = findCandidates(
-                    obj.location.entity,
-                    state,
-                    candidate.findRelated(state.stacks, obj.location.relation)
-                );
-                return !!candidates.length;
-            });
-        }
-
-        switch (entity.quantifier) {
-        case "all":
-            throw "Quantifier 'all' is not supported";
-        case "the":
-            if (candidates.length > 1) throw "Ambiguous entity";
-            break;
-        default:
-            break;
-        }
-
-        return candidates.map((candidate) => candidate.id);
-
-
-        return false;
+        return validLocation;
     }
 
     /**
@@ -254,33 +232,42 @@ module Interpreter {
      * @returns A list of candidates that satisfy the description of the object.
      */
     function findCandidates(descr : Parser.Entity, state : WorldState, ids? : string[]) : string[] {
-        var candidates : string[];
+        var candidates : Util.WorldObject[] = [];
 
         // Special case for floor (TODO: ???)
-        if (descr.object.form == "floor" && ids && ids.indexOf("floor") !== -1) return ["floor"];
+        if (descr.object.form == "floor" && (!ids || ids && ids.indexOf("floor") !== -1))
+            return ["floor"];
 
-        // For each stack
-        for (var stack of state.stacks) {
-            
-            // For each object in stack
-            for (var obj of stack) {
-
+        // For each object in each stack
+        state.stacks.forEach((stack, x) => {
+            stack.forEach((obj, y) => {
                 // Skip object if it is not in list of potential candidates
-                if (ids && ids.indexOf(obj) !== -1) continue;
-
+                if (ids && ids.indexOf(obj) === -1) return;
                 // Add to list of candidates if it is a candidate
-                if (isCandidate(obj, descr, state)) {
-                    candidates.push(obj);
-                }
+                var worldObject = new Util.WorldObject(obj, x, y);
+                if (isCandidate(worldObject, descr.object, state))
+                    candidates.push(worldObject);
+            })
+        });
 
-            }
+        // Also add the object that the arm is holding to the list of candidates.
+        if (state.holding && (!ids || ids && ids.indexOf(state.holding) !== -1)) {
+            var worldObject = new Util.WorldObject(state.holding, -1, -1);
+            if (isCandidate(worldObject, descr.object, state))
+                candidates.push(worldObject);
         }
 
-        // Special case for the object held by the arm
-        if (ids && ids.indexOf(state.holding) === -1 && isCandidate(state.holding, descr, state)) {
-            candidates.push(state.holding);
+        // Handle quantifiers
+        switch (descr.quantifier) {
+        case "all":
+            throw "Quantifier 'all' is not supported";
+        case "the":
+            if (candidates.length > 1) throw "Ambiguous entity";
+            break;
+        default:
+            break;
         }
 
-        return candidates;
+        return candidates.map((candidate) => candidate.id);
     }
 }

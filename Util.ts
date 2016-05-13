@@ -91,7 +91,7 @@ module Util {
             if (lhs.form == "box" && lhs.size == "large" && rhs.form == "pyramid") return false;
         } else if (relation == "inside") {
             if (rhs.form != "box") return false;
-            if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick")) return false;
+            if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick" && lhs.form != "table")) return false;
             if (rhs.size == "small" && lhs.size == "large") return false;
         } else if (relation == "above") {
             if (rhs.form == "ball") return false;

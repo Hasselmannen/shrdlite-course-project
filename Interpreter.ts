@@ -118,9 +118,9 @@ module Interpreter {
         // it won't try to create a destination that fulfills it if one does not already exist)
 
         if (cmd.command == "move" || cmd.command == "take") {
-            if (!cmd.entity) throw "No entity specified in move";
+            if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
-            if (candidates.length < 1) throw "No such entity found";
+            if (candidates.length < 1) throw new Error("No such entity found");
         }
 
         var relativeToCandidates : string[];
@@ -161,7 +161,7 @@ module Interpreter {
                 ]);
             }
         } else if (cmd.command == "put") {
-            if (!state.holding) throw "Not holding any object";
+            if (!state.holding) throw new Error("Not holding any object");
             for (var relativeTo of relativeToCandidates) {
                 if (state.holding == relativeTo) continue;
                 if (Util.isValidRelation(
@@ -180,7 +180,7 @@ module Interpreter {
             }
         }
 
-        if (interpretation.length <= 0) throw "No valid solution found for the utterance";
+        if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
 
         return interpretation;
     }
@@ -235,9 +235,9 @@ module Interpreter {
 
         switch (entity.quantifier) {
         case "all":
-            throw "Quantifier 'all' is not supported";
+            throw new Error("Quantifier 'all' is not supported");
         case "the":
-            if (candidates.length > 1) throw "Ambiguous entity";
+            if (candidates.length > 1) throw new Error("Ambiguous entity");
             break;
         default:
             break;

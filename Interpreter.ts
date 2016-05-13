@@ -98,19 +98,15 @@ module Interpreter {
     //////////////////////////////////////////////////////////////////////
     // private functions
     /**
-     * The core interpretation function. The code here is just a
-     * template; you should rewrite this function entirely. In this
-     * template, the code produces a dummy interpretation which is not
-     * connected to `cmd`, but your version of the function should
-     * analyse cmd in order to figure out what interpretation to
-     * return.
+     * Interpret a parsed command into a logic formula describing the intended result.
+     * 
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        var interpretation : DNFFormula = [];
 
+        var interpretation : DNFFormula;
         var candidates : string[];
 
         // TODO: Not sure if required or not: Allow a more flexible location description
@@ -118,70 +114,115 @@ module Interpreter {
         // it won't try to create a destination that fulfills it if one does not already exist)
 
         if (cmd.command == "move" || cmd.command == "take") {
+
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
             if (candidates.length < 1) throw new Error("No such entity found");
+
+            switch (cmd.command) {
+            case "move":
+                var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
+                var relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
+                interpretation = interpretMove(cmd, state, candidates, relativeToCandidates);
+                break;
+            case "take":
+                interpretation = interpretTake(cmd, state, candidates);
+                break;
+            default:
+            }
+        } else if (cmd.command == "put") {
+            var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
+            var relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
+            interpretation = interpretPut(cmd, state, relativeToCandidates);
         }
+        if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
+        return interpretation;
+    }
 
-        var relativeToCandidates : string[];
-
-        if (cmd.command == "move" || cmd.command == "put") {
-            var subjectSearchEntity = cmd.location.entity;
-            var ids = subjectSearchEntity.object.form == "floor" ? ["floor"] : undefined;
-            relativeToCandidates = findCandidates(subjectSearchEntity, state, ids);
-        }
-
-        if (cmd.command == "move") {
-            for (var candidate of candidates) {
-                for (var relativeTo of relativeToCandidates) {
-                    if (candidate == relativeTo) continue;
-                    if (Util.isValidRelation(
+    /**
+     * Interpret a move command.
+     * 
+     * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
+     * @param state The current state of the world. Useful to look up objects in the world.
+     * @param candidates Entities that matches the description of what should be moved.
+     * @param relativeToCandidates Entities that matches the description of what the destination is in relation to.
+     * @returns A list of list of Literal, representing a formula in disjunctive normal form.
+     */
+    function interpretMove(cmd : Parser.Command,
+        state : WorldState,
+        candidates : string[],
+        relativeToCandidates : string[]) : DNFFormula {
+        var interpretation : DNFFormula = [];
+        for (var candidate of candidates) {
+            for (var relativeTo of relativeToCandidates) {
+                if (candidate == relativeTo) continue;
+                if (Util.isValidRelation(
                         state.objects[candidate],
                         cmd.location.relation,
                         relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-                    ) {
-                        interpretation.push([
-                            {
-                                polarity: true,
-                                relation: cmd.location.relation,
-                                args: [candidate, relativeTo]
-                            }
-                        ]);
-                    }
-                }
-            }
-        } else if (cmd.command == "take") {
-            for (var candidate of candidates) {
-                interpretation.push([
-                    {
-                        polarity: true,
-                        relation: "holding",
-                        args: [candidate]
-                    }
-                ]);
-            }
-        } else if (cmd.command == "put") {
-            if (!state.holding) throw new Error("Not holding any object");
-            for (var relativeTo of relativeToCandidates) {
-                if (state.holding == relativeTo) continue;
-                if (Util.isValidRelation(
-                    state.objects[state.holding],
-                    cmd.location.relation,
-                    relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
                 ) {
                     interpretation.push([
                         {
                             polarity: true,
                             relation: cmd.location.relation,
-                            args: [state.holding, relativeTo]
+                            args: [candidate, relativeTo]
                         }
                     ]);
                 }
             }
         }
+        return interpretation;
+    }
 
-        if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
+    /**
+     * Interpret a take command.
+     * 
+     * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
+     * @param state The current state of the world. Useful to look up objects in the world.
+     * @param candidates Entities that matches the description of what should be taken.
+     * @returns A list of list of Literal, representing a formula in disjunctive normal form.
+     */
+    function interpretTake(command : Parser.Command, worldState : WorldState, candidates : string[]) : DNFFormula {
+        var interpretation : DNFFormula = [];
+        for (var candidate of candidates) {
+            interpretation.push([
+                {
+                    polarity: true,
+                    relation: "holding",
+                    args: [candidate]
+                }
+            ]);
+        }
+        return interpretation;
+    }
 
+    /**
+     * Interpret a put command.
+     * 
+     * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
+     * @param state The current state of the world. Useful to look up objects in the world.
+     * @param relativeToCandidates Entities that matches the description of where the item is to be put.
+     * @returns A list of list of Literal, representing a formula in disjunctive normal form.
+     */
+    function interpretPut(cmd : Parser.Command, state : WorldState, relativeToCandidates : string[]) : DNFFormula {
+        var interpretation : DNFFormula = [];
+        if (!state.holding) throw new Error("Not holding any object");
+        for (var relativeTo of relativeToCandidates) {
+            if (state.holding == relativeTo) continue;
+            if (Util.isValidRelation(
+                    state.objects[state.holding],
+                    cmd.location.relation,
+                    relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+            ) {
+                interpretation.push([
+                    {
+                        polarity: true,
+                        relation: cmd.location.relation,
+                        args: [state.holding, relativeTo]
+                    }
+                ]);
+            }
+        }
         return interpretation;
     }
 

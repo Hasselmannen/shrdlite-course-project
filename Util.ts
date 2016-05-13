@@ -64,7 +64,7 @@ module Util {
                     0,
                     stacks[this.stack].indexOf(this.id) - 1);
             default:
-                throw "Not implemented: " + relation;
+                throw new Error("Not implemented: " + relation);
             }
         }
     }

@@ -111,7 +111,7 @@ module Interpreter {
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         var interpretation : DNFFormula = [];
 
-        var entities : string[];
+        var candidates : string[];
 
         // TODO: Not sure if required or not: Allow a more flexible location description
         // (right now it will search for objects fulfilling the description,
@@ -119,27 +119,24 @@ module Interpreter {
 
         if (cmd.command == "move" || cmd.command == "take") {
             if (!cmd.entity) throw "No entity specified in move";
-            entities = findCandidates(cmd.entity.object, state);
-            if (entities.length < 1) throw "No such entity found";
-
-            if (cmd.command == "the" && entities.length > 1) throw "Ambiguous entity";
-            else if (cmd.command == "all") throw "Quantifier 'all' is not supported";
+            candidates = findCandidates(cmd.entity, state);
+            if (candidates.length < 1) throw "No such entity found";
         }
 
-        var relationTo : string[];
+        var relativeToCandidates : string[];
 
         if (cmd.command == "move" || cmd.command == "put") {
-            relationTo = cmd.location.entity.object.form == "floor" ?
-                findCandidates(cmd.location.entity.object, state, ["floor"]) :
-                findCandidates(cmd.location.entity.object, state)
+            var subjectSearchEntity = cmd.location.entity;
+            var ids = subjectSearchEntity.object.form == "floor" ? ["floor"] : undefined;
+            relativeToCandidates = findCandidates(subjectSearchEntity, state, ids);
         }
 
         if (cmd.command == "move") {
-            for (var entity of entities) {
-                for (var relativeTo of relationTo) {
-                    if (entity == relativeTo) continue;
+            for (var candidate of candidates) {
+                for (var relativeTo of relativeToCandidates) {
+                    if (candidate == relativeTo) continue;
                     if (Util.isValidRelation(
-                        state.objects[entity],
+                        state.objects[candidate],
                         cmd.location.relation,
                         relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
                     ) {
@@ -147,25 +144,25 @@ module Interpreter {
                             {
                                 polarity: true,
                                 relation: cmd.location.relation,
-                                args: [entity, relativeTo]
+                                args: [candidate, relativeTo]
                             }
                         ]);
                     }
                 }
             }
         } else if (cmd.command == "take") {
-            for (var entity of entities) {
+            for (var candidate of candidates) {
                 interpretation.push([
                     {
                         polarity: true,
                         relation: "holding",
-                        args: [entity]
+                        args: [candidate]
                     }
                 ]);
             }
         } else if (cmd.command == "put") {
-            if (!state.holding) throw "Not holding any object"
-            for (var relativeTo of relationTo) {
+            if (!state.holding) throw "Not holding any object";
+            for (var relativeTo of relativeToCandidates) {
                 if (state.holding == relativeTo) continue;
                 if (Util.isValidRelation(
                     state.objects[state.holding],
@@ -188,16 +185,17 @@ module Interpreter {
         return interpretation;
     }
 
-    // TODO: possibly add support for reffering to the object that the arm is currently holding.
+    // TODO: possibly add support for referring to the object that the arm is currently holding.
     /**
      * Identifies which objects in the world that satisfy a given description of an object.
      *
-     * @param obj A description of the object to identify.
+     * @param entity An entity description..
      * @param state The state of the world.
      * @param ids A list of identifiers to which to restrict the identification.
      * @returns A list of candidates that satisfy the description of the object.
      */
-    function findCandidates(obj : Parser.Object, state : WorldState, ids? : string[]) : string[] {
+    function findCandidates(entity : Parser.Entity, state : WorldState, ids? : string[]) : string[] {
+        var obj = entity.object;
         if (obj.form == "floor" && ids && ids.indexOf("floor") !== -1)
             return ["floor"];
 
@@ -227,22 +225,22 @@ module Interpreter {
         if (obj.location) {
             candidates = candidates.filter(candidate => {
                 var candidates = findCandidates(
-                    obj.location.entity.object,
+                    obj.location.entity,
                     state,
                     candidate.findRelated(state.stacks, obj.location.relation)
                 );
-
-                switch (obj.location.entity.quantifier) {
-                case "all":
-                    throw "Quantifier 'all' is not supported";
-                case "the":
-                    if (candidates.length > 1) throw "Ambiguous entity";
-                    break;
-                default:
-                    break;
-                }
                 return !!candidates.length;
             });
+        }
+
+        switch (entity.quantifier) {
+        case "all":
+            throw "Quantifier 'all' is not supported";
+        case "the":
+            if (candidates.length > 1) throw "Ambiguous entity";
+            break;
+        default:
+            break;
         }
 
         return candidates.map((candidate) => candidate.id);

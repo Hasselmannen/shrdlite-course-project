@@ -292,14 +292,14 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
 
-        // Create parameters for a* search
+        // Create parameters for A* search
         var initialState = worldToSearchState(state);
         var graph = new SearchStateGraph(state.objects);
         var goalFunc = goal(interpretation);
         var heuristicsFunc = heuristics(interpretation);
         var timeout = 60; // 1 minute should be enough for anyone :v
 
-        // Call a* and retreive path
+        // Call A* and retreive path
         var path = aStarSearch<SearchState>(graph, initialState, goalFunc, heuristicsFunc, timeout);
 
         // Convert path to plan

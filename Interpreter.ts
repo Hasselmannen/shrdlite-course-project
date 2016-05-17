@@ -110,10 +110,6 @@ module Interpreter {
         var interpretation : DNFFormula;
         var candidates : string[];
 
-        // TODO: Not sure if required or not: Allow a more flexible location description
-        // (right now it will search for objects fulfilling the description,
-        // it won't try to create a destination that fulfills it if one does not already exist)
-
         if (cmd.command == "move" || cmd.command == "take") {
 
             if (!cmd.entity) throw new Error("No entity specified in move");
@@ -276,7 +272,7 @@ module Interpreter {
     function findCandidates(descr : Parser.Entity, state : WorldState, ids? : string[]) : string[] {
         var candidates : Util.WorldObject[] = [];
 
-        // Special case for floor (TODO: ???)
+        // Special case for floor
         if (descr.object.form == "floor" && (!ids || ids && ids.indexOf("floor") !== -1))
             return ["floor"];
 

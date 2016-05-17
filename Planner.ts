@@ -209,7 +209,7 @@ module Planner {
             // Care only about the heuristic to the 'closest' goal.
             return Math.min.apply(null, interpretation.map((conjunction) => {
                 // Add together the heuristic for each part of the conjunction
-                return conjunction.map((literal) => {
+                return Math.max.apply(conjunction.map((literal) => {
                     switch(literal.relation) {
                     case "holding": // The number of moves the arm needs to reach the object, plus one for picking it up
                         var pos = Util.findStack(literal.args[0], node.stacks);
@@ -230,7 +230,7 @@ module Planner {
                         return pos1 > pos2 ? 0 : pos2 - pos1 + 2;
                     default: return 0;
                     }
-                }).reduce((prev, curr) => prev + curr); // Recursively add together the results.
+                }));
             }));
         };
     }

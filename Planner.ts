@@ -65,6 +65,10 @@ module Planner {
             public holding : string, // Invariant: holding may not be empty string
             public arm : number
         ) { }
+
+        toString() : string {
+            return collections.makeString(this);
+        }
     }
 
     function worldToSearchState(worldState : WorldState) : SearchState {

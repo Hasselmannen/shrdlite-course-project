@@ -208,7 +208,7 @@ module Planner {
         return (node) => {
             // Care only about the heuristic to the 'closest' goal.
             return Math.min.apply(null, interpretation.map((conjunction) => {
-                // Add together the heuristic for each part of the conjunction
+                // Use the most expensive conjunction of the disjunction as an estimate of the cost
                 return Math.max.apply(null, conjunction.map((literal) => {
                     switch(literal.relation) {
                     case "holding": // The number of moves the arm needs to reach the object, plus one for picking it up

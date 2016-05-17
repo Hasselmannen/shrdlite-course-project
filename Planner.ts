@@ -198,8 +198,8 @@ module Planner {
                 var relation = literal.relation;
                 var relativeTo = literal.args[1];
                 var ids = entity.findRelated(node.stacks, relation);
-                if (ids.indexOf(relativeTo) !== -1) return true;
-                else return false;
+                if (~ids.indexOf(relativeTo)) return true;
+                return false;
             });
         });
     }

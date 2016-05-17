@@ -14,7 +14,7 @@ module Util {
      */
     export function findStack(id : string, stacks : string[][]) : number {
         for (var i = stacks.length - 1; i >= 0; i--) {
-            if (stacks[i].indexOf(id) !== -1) return i;
+            if (~stacks[i].indexOf(id)) return i;
         }
         return -1;
     }

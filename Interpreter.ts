@@ -273,23 +273,23 @@ module Interpreter {
         var candidates : Util.WorldObject[] = [];
 
         // Special case for floor
-        if (descr.object.form == "floor" && (!ids || ids && ids.indexOf("floor") !== -1))
+        if (descr.object.form == "floor" && (!ids || ids && Util.contains(ids, "floor")))
             return ["floor"];
 
         // For each object in each stack
         state.stacks.forEach((stack, x) => {
             stack.forEach((obj, y) => {
                 // Skip object if it is not in list of potential candidates
-                if (ids && ids.indexOf(obj) === -1) return;
+                if (ids && !Util.contains(ids, obj)) return;
                 // Add to list of candidates if it is a candidate
                 var worldObject = new Util.WorldObject(obj, x, y);
                 if (isCandidate(worldObject, descr.object, state))
                     candidates.push(worldObject);
-            })
+            });
         });
 
         // Also add the object that the arm is holding to the list of candidates.
-        if (state.holding && (!ids || ids && ids.indexOf(state.holding) !== -1)) {
+        if (state.holding && (!ids || ids && Util.contains(ids, state.holding))) {
             var worldObject = new Util.WorldObject(state.holding, -1, -1);
             if (isCandidate(worldObject, descr.object, state))
                 candidates.push(worldObject);

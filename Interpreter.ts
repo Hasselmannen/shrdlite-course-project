@@ -154,22 +154,50 @@ module Interpreter {
         candidates : string[],
         relativeToCandidates : string[]) : DNFFormula {
         var interpretation : DNFFormula = [];
-        for (var candidate of candidates) {
-            for (var relativeTo of relativeToCandidates) {
-                if (candidate == relativeTo) continue;
-                if (Util.isValidRelation(
-                        state.objects[candidate],
-                        cmd.location.relation,
-                        relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-                ) {
-                    interpretation.push([
-                        {
-                            polarity: true,
-                            relation: cmd.location.relation,
-                            args: [candidate, relativeTo]
-                        }
-                    ]);
+
+        if (cmd.entity.quantifier != "all" && cmd.location.entity.quantifier != "all") {
+            for (var candidate of candidates) {
+                for (var relativeTo of relativeToCandidates) {
+                    if (candidate == relativeTo) continue;
+                    if (Util.isValidRelation(
+                            state.objects[candidate],
+                            cmd.location.relation,
+                            relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                    ) {
+                        interpretation.push([
+                            {
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [candidate, relativeTo]
+                            }
+                        ]);
+                    }
                 }
+            }
+        }
+        else {
+            interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation));
+            interpretation = interpretation.filter((conjunction) => {
+                return conjunction.every((literal) => {
+                    var entity = state.objects[literal.args[0]];
+                    var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
+                    return Util.isValidRelation( 
+                        { form : entity.form,     size : entity.size },
+                        literal.relation,
+                        { form : relativeTo.form, size : relativeTo.size}
+                    );
+                })
+            });
+
+            if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
+                var filtered: Literal[] = [];
+                for (var conjunction of interpretation) {
+                    for (var literal of conjunction) {
+                        if (!filtered.some((elem) => equalLiterals(elem, literal)))
+                            filtered.push(literal);
+                    }
+                }
+                interpretation = [filtered];
             }
         }
         return interpretation;
@@ -255,8 +283,8 @@ module Interpreter {
         // Make sure that, if a location is specified, it exists in the world,
         var validLocation : boolean = true;
 
-        if (descr.quantifier != "all") {
-            if (descr.object.location) {
+        if (descr.object.location) {
+            if (descr.quantifier != "all") {
 	            var candidates = findCandidates(
 	                descr.object.location.entity,
 	                state,
@@ -264,12 +292,13 @@ module Interpreter {
 	            );
 	            validLocation = !!candidates.length;
        	    }
-        }
-        else {
-            // TODO: Implement
+            else {
+                var related = obj.findRelated(state.stacks, descr.object.location.relation);
+                var candidates = findCandidates(descr.object.location.entity, state);
+                validLocation = candidates.length && candidates.every((id) => !!~related.indexOf(id));
+            }
         }
 
-       
         return validLocation;
     }
 
@@ -309,8 +338,6 @@ module Interpreter {
 
         // Handle quantifiers
         switch (descr.quantifier) {
-        case "all":
-            throw new Error("Quantifier 'all' is not supported");
         case "the":
             if (candidates.length > 1) throw new Error("Ambiguous entity");
             break;
@@ -319,5 +346,43 @@ module Interpreter {
         }
 
         return candidates.map((candidate) => candidate.id);
+    }
+
+    function toCNF(arr1: string[], arr2: string[], relation: string): Literal[][] {
+        var conjunction: Literal[][] = [];
+        for (var elem1 of arr1) {
+            var disjunction: Literal[] = [];
+            for (var elem2 of arr2) {
+                disjunction.push({
+                    polarity: true,
+                    relation: relation,
+                    args: [elem1, elem2]
+                });
+            }
+            conjunction.push(disjunction);
+        }
+        return conjunction;
+    }
+
+    function CNFtoDNF(conjunction: Literal[][]): DNFFormula {
+        function CNFtoDNF(curr: DNFFormula, rest: Literal[][]): DNFFormula {
+            if (!rest.length) return curr;
+            var next: DNFFormula = [];
+            for (var literal of rest[0]) {
+                if (!curr.length) {
+                    next.push([literal]);
+                }
+                else {
+                    next = next.concat(curr.map((conjunction) => conjunction.concat([literal])));
+                }
+            }
+            return CNFtoDNF(next, rest.slice(1));
+        }
+        return CNFtoDNF([], conjunction);
+    }
+
+    function equalLiterals(lhs: Literal, rhs: Literal): boolean {
+        return lhs.args[0] == rhs.args[0] && lhs.args[1] == rhs.args[1] &&
+               lhs.polarity == rhs.polarity && lhs.relation == rhs.relation;
     }
 }

@@ -320,4 +320,98 @@ module Interpreter {
 
         return candidates.map((candidate) => candidate.id);
     }
+
+
+    class Pair {
+        constructor(public first : string, public second : string) { }
+    };
+
+    class Combination {
+        public pairs : Pair[] = [];
+    };
+
+    function allCombinations(list1 : string[], list2 : string[]) : Combination[] {
+
+        return null;    
+    }
+
+    function allCombinationsInternal(combinations : Combination[], currentLocked : Combination, remaining1 : string[], remaining2 : string[]) : void {
+
+        var locked1 : string = remaining1.pop();
+
+        // If we don't have any more elements in remaining1 we can just return the remaining pairs
+        if (remaining1.length <= 0) {
+            for (var locked2 of remaining2) {
+
+                // Copy current locked to new Combination
+                var finalCombination = new Combination();
+                finalCombination.pairs = currentLocked.pairs.slice();
+
+                // Add the last pair to combination
+                finalCombination.pairs.push(new Pair(locked1, locked2));
+
+                // Add combination to output list of combinations
+                combinations.push(finalCombination);
+            }
+            remaining1.push(locked1);
+            return;
+        }
+
+        for (var locked2 of remaining2) {
+
+            // Copy remaing2 and remove locked2
+            var remaining2MinusLocked = remaining2.slice();
+            remaining2MinusLocked.splice(remaining2MinusLocked.indexOf(locked2), 1);
+
+            // Create new pair with the locked variables
+            var lockedPair : Pair = new Pair(locked1, locked2);
+
+            allCombinationsInternal(combinations, currentLocked, remaining1, remaining2);
+
+
+        }
+
+        remaining1.push(locked1);
+
+    }
+
+
+    
+
+
+
+    function func(objs1 : string[], objs2 : string[]) : string[][] {
+        var combinations : string[][] = [];
+        var freeList : string[] = objs2;
+
+
+
+
+        return combinations;
+    }
+
+    function funcInternal(combinations : string[][], lockedCombination : string, remaining : string[], freeList : string[]) : string[] {
+        
+        var current = remaining.pop();
+
+        // If we only have 1 remaining left we can return all possible combinations between it and freeList as a list
+        if (remaining.length <= 0) {
+            var returnCombinations : string[] = [];
+            for (var choice of freeList) {
+                returnCombinations.push(current + choice);
+            }
+            remaining.push(current);
+            return returnCombinations;
+        }
+
+        
+        for (var locked of freeList) {
+            var freeListMinusLocked = freeList.slice();
+            freeListMinusLocked.splice(freeListMinusLocked.indexOf(choice), 1);
+
+            funcInternal(combinations, remaining, freeListMinusLocked);
+        }
+
+        remaining.push(current);
+    }
 }

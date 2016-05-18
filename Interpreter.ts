@@ -170,8 +170,7 @@ module Interpreter {
                     }
                 }
             }
-        }
-        else {
+        } else {
             interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation));
             interpretation = interpretation.filter((conjunction) => {
                 return conjunction.every((literal) => {
@@ -180,7 +179,7 @@ module Interpreter {
                     return Util.isValidRelation( 
                         { form : entity.form,     size : entity.size },
                         literal.relation,
-                        { form : relativeTo.form, size : relativeTo.size}
+                        { form : relativeTo.form, size : relativeTo.size }
                     );
                 })
             });
@@ -232,21 +231,45 @@ module Interpreter {
     function interpretPut(cmd : Parser.Command, state : WorldState, relativeToCandidates : string[]) : DNFFormula {
         var interpretation : DNFFormula = [];
         if (!state.holding) throw new Error("Not holding any object");
-        for (var relativeTo of relativeToCandidates) {
-            if (state.holding == relativeTo) continue;
-            if (Util.isValidRelation(
-                    state.objects[state.holding],
-                    cmd.location.relation,
-                    relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-            ) {
-                interpretation.push([
-                    {
-                        polarity: true,
-                        relation: cmd.location.relation,
-                        args: [state.holding, relativeTo]
-                    }
-                ]);
+
+        if (cmd.location.entity.quantifier != "all") {
+            for (var relativeTo of relativeToCandidates) {
+                if (state.holding == relativeTo) continue;
+                if (Util.isValidRelation(
+                        state.objects[state.holding],
+                        cmd.location.relation,
+                        relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                ) {
+                    interpretation.push([
+                        {
+                            polarity: true,
+                            relation: cmd.location.relation,
+                            args: [state.holding, relativeTo]
+                        }
+                    ]);
+                }
             }
+        } else {
+            interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation));
+            interpretation = interpretation.filter((conjunction) => {
+                return conjunction.every((literal) => {
+                    var entity = state.objects[state.holding];
+                    var relativeTo  = literal.args[0] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[0]];
+                    return Util.isValidRelation( 
+                        { form : entity.form,     size : entity.size },
+                        literal.relation,
+                        { form : relativeTo.form, size : relativeTo.size }
+                    );
+                })
+            });
+            var filtered: Literal[] = [];
+            for (var conjunction of interpretation) {
+                for (var literal of conjunction) {
+                    if (!filtered.some((elem) => equalLiterals(elem, literal)))
+                        filtered.push(literal);
+                }
+            }
+            interpretation = [filtered];
         }
         return interpretation;
     }

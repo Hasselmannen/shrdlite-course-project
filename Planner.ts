@@ -260,9 +260,10 @@ module Planner {
         };
     }
 
-    function convertPathToPlan(path : SearchResult<SearchState>) : string[] {
+    function convertPathToPlan(objects : { [s:string]: ObjectDefinition}, path : SearchResult<SearchState>) : string[] {
 
         var plan : string[] = [];
+        var pickedUpAnything : boolean = false;
 
         // Go through the whole path, for each node look at the current one and the next one to find the difference
         for (var i : number = 0; i < path.path.length - 1; ++i) {
@@ -283,12 +284,23 @@ module Planner {
 
             // Check if arm picked up something
             if (!current.holding && !!next.holding) {
+                pickedUpAnything = true;
+                var holdObject = objects[next.holding];
+                var action = (i != path.path.length-2) ? "Moving" : "Taking";
+                var objDesc = " the "+holdObject.size+" "+holdObject.color+" "+holdObject.form;
+                plan.push(action + objDesc);
                 plan.push("p");
                 continue;
             }
 
             // Check if arm dropped something
             if (!!current.holding && !next.holding) {
+                if (!pickedUpAnything) {
+                    var holdObject = objects[current.holding];
+                    var objDesc = "the "+holdObject.size+" "+holdObject.color+" "+holdObject.form;
+                    plan.push("Dropping "+objDesc);
+                }
+                pickedUpAnything = false;
                 plan.push("d");
                 continue;
             }
@@ -328,7 +340,7 @@ module Planner {
         var path = aStarSearch<SearchState>(graph, initialState, goalFunc, heuristicsFunc, timeout);
 
         // Convert path to plan
-        return convertPathToPlan(path);
+        return convertPathToPlan(state.objects, path);
     }
 
 }

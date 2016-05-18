@@ -128,7 +128,7 @@ module Util {
         objects : { [index : string] : ObjectDefinition },
         stacks : string[][]) : string {
 
-        var propertyCombinations = [["color", "form"], ["size", "form"]];
+        var propertyCombinations = [["form"], ["color", "form"], ["size", "form"]];
         var objectDef = objects[objectKey];
 
         // Determine if a set of properties uniquely describes an object

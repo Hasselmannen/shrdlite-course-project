@@ -80,13 +80,19 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {}
-
         // TODO: Add members if necessary
+        public numObjects: number;
+        public worldObjects: { [s:string]: ObjectDefinition};
+
+        constructor(public worldState: WorldState) {
+            this.worldObjects = worldState.objects;
+            this.numObjects = [].concat.apply([], worldState.stacks).length;
+        }
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
-            // TODO: Implement this
             var edges : Edge<SearchState>[] = [];
+            var carryCost: number = 2;
+            var carryLargeCost: number = 2;
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -95,7 +101,14 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm - 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size === "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
@@ -107,10 +120,18 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm + 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size === "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
+            var maxPickupCost: number = 10;
             // Possible to pick upp object?
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
@@ -121,7 +142,10 @@ module Planner {
                     tempStacks,
                     hold,
                     node.arm);
-                edge.cost = 1; //TODO maybe change this later
+                // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
+                // The stack can at most contain all objects.. duh
+                edge.cost =
+                    1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                 edges.push(edge);
 
@@ -136,7 +160,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
-                    edge.cost = 1; //TODO maybe change this later
+                    edge.cost = 1 + maxPickupCost; // stack size = 0
 
                     edges.push(edge);
                 } else {
@@ -157,7 +181,10 @@ module Planner {
                             tempStacks,
                             null,
                             node.arm);
-                        edge.cost = 1; //TODO maybe change this later
+                        // Cost >= 1 that decreases with increased stack size
+                        // The stack can at most contain all objects.. duh
+                        edge.cost =
+                            1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                         edges.push(edge);
                     }
@@ -196,6 +223,7 @@ module Planner {
                 var relation = literal.relation;
                 var relativeTo = literal.args[1];
                 var ids = entity.findRelated(node.stacks, relation);
+
                 return Util.contains(ids, relativeTo);
             });
         });
@@ -291,7 +319,7 @@ module Planner {
 
         // Create parameters for A* search
         var initialState = worldToSearchState(state);
-        var graph = new SearchStateGraph(state.objects);
+        var graph = new SearchStateGraph(state);
         var goalFunc = goal(interpretation);
         var heuristicsFunc = heuristics(interpretation);
         var timeout = 60; // 1 minute should be enough for anyone :v

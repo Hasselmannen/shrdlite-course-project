@@ -48,7 +48,7 @@ module Util {
             case "leftof":
                 return this.stack < stacks.length - 1 ? [].concat.apply([], stacks.slice(this.stack + 1)) : [];
             case "rightof":
-                return this.stack > 0 ? [].concat.apply([], stacks.slice(0, this.stack - 1)) : [];
+                return this.stack > 0 ? [].concat.apply([], stacks.slice(0, this.stack)) : [];
             case "inside":
                 return [stacks[this.stack][this.pos - 1]];
             case "ontop":
@@ -60,9 +60,11 @@ module Util {
                 return (this.stack > 0 ? stacks[this.stack - 1] : []).concat(
                     this.stack < stacks.length - 1 ? stacks[this.stack + 1] : []);
             case "above":
-                return stacks[this.stack].slice(
-                    0,
-                    stacks[this.stack].indexOf(this.id) - 1);
+                return ["floor"].concat(
+                    stacks[this.stack].slice(
+                        0,
+                        stacks[this.stack].indexOf(this.id)
+                    ));
             default:
                 throw new Error("Not implemented: " + relation);
             }

@@ -144,7 +144,8 @@ module Planner {
                     node.arm);
                 // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
                 // The stack can at most contain all objects.. duh
-                edge.cost = 1 + maxPickupCost*(this.numObjects - (tempStacks[node.arm].length+1))/this.numObjects;
+                edge.cost =
+                    1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                 edges.push(edge);
 
@@ -159,7 +160,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
-                    edge.cost = 1 + this.numObjects; // stack size = 0
+                    edge.cost = 1 + maxPickupCost; // stack size = 0
 
                     edges.push(edge);
                 } else {
@@ -182,7 +183,8 @@ module Planner {
                             node.arm);
                         // Cost >= 1 that decreases with increased stack size
                         // The stack can at most contain all objects.. duh
-                        edge.cost = 1 + maxPickupCost*(this.numObjects - tempStacks[node.arm].length)/this.numObjects;
+                        edge.cost =
+                            1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                         edges.push(edge);
                     }

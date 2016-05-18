@@ -80,13 +80,17 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {}
-
         // TODO: Add members if necessary
+        public numObjects: number;
+
+        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {
+            this.numObjects = Object.keys(worldObjects).length;
+        }
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
-            // TODO: Implement this
             var edges : Edge<SearchState>[] = [];
+            var carryCost: number = 2;
+            var carryLargeCost: number = 2;
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -95,7 +99,14 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm - 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size == "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
@@ -107,10 +118,18 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm + 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size == "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
+            var maxPickupCost: number = 10;
             // Possible to pick upp object?
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
@@ -121,7 +140,9 @@ module Planner {
                     tempStacks,
                     hold,
                     node.arm);
-                edge.cost = 1; //TODO maybe change this later
+                // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
+                // The stack can at most contain all objects.. duh
+                edge.cost = 1 + maxPickupCost*(this.numObjects - (tempStacks[node.arm].length+1))/this.numObjects;
 
                 edges.push(edge);
 
@@ -136,7 +157,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
-                    edge.cost = 1; //TODO maybe change this later
+                    edge.cost = 1 + this.numObjects; // stack size = 0
 
                     edges.push(edge);
                 } else {
@@ -157,7 +178,9 @@ module Planner {
                             tempStacks,
                             null,
                             node.arm);
-                        edge.cost = 1; //TODO maybe change this later
+                        // Cost >= 1 that decreases with increased stack size
+                        // The stack can at most contain all objects.. duh
+                        edge.cost = 1 + maxPickupCost*(this.numObjects - tempStacks[node.arm].length)/this.numObjects;
 
                         edges.push(edge);
                     }

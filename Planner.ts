@@ -212,31 +212,25 @@ module Planner {
             return conjunction.every((literal) => {
                 // Special case when holding an object
                 if (literal.relation == "holding") {
-                    return (literal.args[0] == node.holding);
+                    return literal.args[0] == node.holding;
                 }
 
-                // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                 var id = literal.args[0];
                 if (id == node.holding) return false;
 
                 var stack : number = Util.findStack(id, node.stacks);
-                console.log("stack "+stack);
                 var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
-                console.log("id "+id);
-                console.log("indexOf "+node.stacks[stack].indexOf(id));
                 var relation = literal.relation;
                 var relativeTo = literal.args[1];
                 var ids = entity.findRelated(node.stacks, relation);
-                console.log("findRelated "+ids);
-                console.log("---");
 
-                return (ids.indexOf(relativeTo) != -1);
+                return Util.contains(ids, relativeTo);
             });
         });
     }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
-        return (node) => {
+        return node => {
             // Care only about the heuristic to the 'closest' goal.
             return Math.min.apply(null, interpretation.map((conjunction) => {
                 // Use the most expensive conjunction of the disjunction as an estimate of the cost

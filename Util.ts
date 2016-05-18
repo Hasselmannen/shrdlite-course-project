@@ -1,8 +1,8 @@
-/** Util module
+/**
+ * Util module
  *
  * Provides utility functionality for dealing with object's and stacks in a world.
  */
-
 module Util {
     /**
      * Finds the index in the stack to which the given id belongs in the given
@@ -14,7 +14,7 @@ module Util {
      */
     export function findStack(id : string, stacks : string[][]) : number {
         for (var i = stacks.length - 1; i >= 0; i--) {
-            if (~stacks[i].indexOf(id)) return i;
+            if (Util.contains(stacks[i], id)) return i;
         }
         return -1;
     }
@@ -102,5 +102,12 @@ module Util {
             return isValidRelation(rhs, "above", lhs);
         }
         return true;
+    }
+
+    /**
+     * Check if list contains an element.
+     */
+    export function contains<T>(list : T[], element : T) : boolean {
+        return list.indexOf(element) !== -1;
     }
 }

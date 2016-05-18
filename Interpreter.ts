@@ -235,15 +235,15 @@ module Interpreter {
      * @param state The state of the world.
      * @returns True if the proposed candidate is valid.
      */
-    function isCandidate(obj : Util.WorldObject, descr : Parser.Object, state : WorldState) : boolean {
+    function isCandidate(obj : Util.WorldObject, descr : Parser.Entity, state : WorldState) : boolean {
 
         var properties = ["color", "size"];
-        if (descr.form != "anyform" && (!descr.object || descr.object.form != "anyform"))
+        if (descr.object.form != "anyform" && (!descr.object.object || descr.object.object.form != "anyform"))
             properties.push("form");
 
         // Make sure that all defined properties hold for the object
         var validProps : boolean = properties.every((prop) => {
-            var lhs : string = descr.object ? (<any>descr.object)[prop] : (<any>descr)[prop];
+            var lhs : string = descr.object.object ? (<any>descr.object.object)[prop] : (<any>descr.object)[prop];
             if (lhs) {
                 let rhs : string = (<any>state.objects[obj.id])[prop];
                 return lhs == rhs;
@@ -254,14 +254,22 @@ module Interpreter {
 
         // Make sure that, if a location is specified, it exists in the world,
         var validLocation : boolean = true;
-        if (descr.location) {
-            var candidates = findCandidates(
-                descr.location.entity,
-                state,
-                obj.findRelated(state.stacks, descr.location.relation)
-            );
-            validLocation = !!candidates.length;
+
+        if (descr.quantifier != "all") {
+            if (descr.object.location) {
+	            var candidates = findCandidates(
+	                descr.object.location.entity,
+	                state,
+	                obj.findRelated(state.stacks, descr.object.location.relation)
+	            );
+	            validLocation = !!candidates.length;
+       	    }
         }
+        else {
+            // TODO: Implement
+        }
+
+       
         return validLocation;
     }
 
@@ -287,7 +295,7 @@ module Interpreter {
                 if (ids && ids.indexOf(obj) === -1) return;
                 // Add to list of candidates if it is a candidate
                 var worldObject = new Util.WorldObject(obj, x, y);
-                if (isCandidate(worldObject, descr.object, state))
+                if (isCandidate(worldObject, descr, state))
                     candidates.push(worldObject);
             })
         });
@@ -295,7 +303,7 @@ module Interpreter {
         // Also add the object that the arm is holding to the list of candidates.
         if (state.holding && (!ids || ids && ids.indexOf(state.holding) !== -1)) {
             var worldObject = new Util.WorldObject(state.holding, -1, -1);
-            if (isCandidate(worldObject, descr.object, state))
+            if (isCandidate(worldObject, descr, state))
                 candidates.push(worldObject);
         }
 

@@ -82,9 +82,11 @@ module Planner {
 
         // TODO: Add members if necessary
         public numObjects: number;
+        public worldObjects: { [s:string]: ObjectDefinition};
 
-        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {
-            this.numObjects = Object.keys(worldObjects).length;
+        constructor(public worldState: WorldState) {
+            this.worldObjects = worldState.objects;
+            this.numObjects = [].concat.apply([], worldState.stacks).length;
         }
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
@@ -104,7 +106,7 @@ module Planner {
                 if (node.holding) {
                     edge.cost += carryCost;
                     // Even more expensive to carry large objects
-                    if (this.worldObjects[node.holding].size == "large")
+                    if (this.worldObjects[node.holding].size === "large")
                         edge.cost += carryLargeCost;
                 }
 
@@ -123,7 +125,7 @@ module Planner {
                 if (node.holding) {
                     edge.cost += carryCost;
                     // Even more expensive to carry large objects
-                    if (this.worldObjects[node.holding].size == "large")
+                    if (this.worldObjects[node.holding].size === "large")
                         edge.cost += carryLargeCost;
                 }
 
@@ -317,7 +319,7 @@ module Planner {
 
         // Create parameters for A* search
         var initialState = worldToSearchState(state);
-        var graph = new SearchStateGraph(state.objects);
+        var graph = new SearchStateGraph(state);
         var goalFunc = goal(interpretation);
         var heuristicsFunc = heuristics(interpretation);
         var timeout = 60; // 1 minute should be enough for anyone :v

@@ -110,4 +110,49 @@ module Util {
     export function contains<T>(list : T[], element : T) : boolean {
         return list.indexOf(element) !== -1;
     }
+
+    /**
+     * Returns the shortest unique description of an object in the world, using only
+     * the object properties, if possible.
+     *
+     * Form is always included, but color is preferred over size. The result only
+     * contains both if needed. If there is no unique description, all properties are
+     * used.
+     * 
+     * @param objectKey The key of the item to find a description for.
+     * @param objects A mapping from object keys to definitions.
+     * @param stacks The stacks of the world.
+     */
+    export function shortestUniqueObjectDescription(
+        objectKey : string,
+        objects : { [index : string] : ObjectDefinition },
+        stacks : string[][]) : string {
+
+        var propertyCombinations = [["color", "form"], ["size", "form"]];
+        var objectDef = objects[objectKey];
+
+        // Determine if a set of properties uniquely describes an object
+        var isUnique = (propertySet : string[]) : boolean => {
+            var matchFound = false;
+
+            return stacks.every((stack) => {
+                return stack.every((otherKey) => {
+                    if (propertySet.every((prop) =>
+                        (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
+                    )) {
+                        // We have found a match using the given properties
+                        if (matchFound) {
+                            // There is more than one object that matches
+                            return false;
+                        }
+                        matchFound = true;
+                    }
+                    return true;
+                });
+            });
+        }
+        var uniquePropertySets = propertyCombinations.filter((propertySet) => isUnique(propertySet));
+        var selectedPropertySet = uniquePropertySets ? uniquePropertySets[0] : ["size", "color", "form"];
+        return selectedPropertySet.reduce((prev, curr) => prev + " " + (objects[objectKey] as any)[curr], "");
+    }
 }

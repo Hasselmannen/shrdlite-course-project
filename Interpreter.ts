@@ -170,32 +170,30 @@ module Interpreter {
                     }
                 }
             }
-        } else {
-            interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation));
-            interpretation = interpretation.filter((conjunction) => {
-                return conjunction.every((literal) => {
-                    var entity = state.objects[literal.args[0]];
-                    var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
-                    return Util.isValidRelation( 
-                        { form : entity.form,     size : entity.size },
-                        literal.relation,
-                        { form : relativeTo.form, size : relativeTo.size }
-                    );
-                })
-            });
-
-            if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
-                // Flatten, since the "all" quantifier is effective on both the
-                // source entity and the location entities
-                var filtered: Literal[] = [];
-                for (var conjunction of interpretation) {
-                    for (var literal of conjunction) {
-                        if (!filtered.some((elem) => equalLiterals(elem, literal)))
-                            filtered.push(literal);
-                    }
+        } 
+        interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
+        interpretation = interpretation.filter((conjunction) => {
+            return conjunction.every((literal) => {
+                var entity = state.objects[literal.args[0]];
+                var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
+                return Util.isValidRelation( 
+                    { form : entity.form,     size : entity.size },
+                    literal.relation,
+                    { form : relativeTo.form, size : relativeTo.size }
+                );
+            })
+        });
+        if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
+            // Flatten, since the "all" quantifier is effective on both the
+            // source entity and the location entities
+            var filtered: Literal[] = [];
+            for (var conjunction of interpretation) {
+                for (var literal of conjunction) {
+                    if (!filtered.some((elem) => equalLiterals(elem, literal)))
+                        filtered.push(literal);
                 }
-                interpretation = [filtered];
             }
+            interpretation = [filtered];
         }
         return interpretation;
     }
@@ -252,7 +250,7 @@ module Interpreter {
                 }
             }
         } else {
-            interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation));
+            interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
             interpretation = interpretation.filter((conjunction) => {
                 return conjunction.every((literal) => {
                     var entity = state.objects[state.holding];
@@ -264,17 +262,6 @@ module Interpreter {
                     );
                 })
             });
-
-            // Flatten, since the "all" quantifier is effective on both the
-            // source entity and the location entities
-            var filtered: Literal[] = [];
-            for (var conjunction of interpretation) {
-                for (var literal of conjunction) {
-                    if (!filtered.some((elem) => equalLiterals(elem, literal)))
-                        filtered.push(literal);
-                }
-            }
-            interpretation = [filtered];
         }
         return interpretation;
     }
@@ -381,18 +368,18 @@ module Interpreter {
      * @param relation The relation between elements in arr1 and arr2.
      * @returns A conjuctive normal form of literals.
      */
-    function toCNF(arr1: string[], arr2: string[], relation: string): Literal[][] {
+    function toCNF(arr1: string[], arr2: string[], relation: string, flipped?: boolean): Literal[][] {
         var conjunction: Literal[][] = [];
 
         // Create a disjunction for each element in arr1, and push literals
         // corresponding to this element paired with all elements in arr2 into it.
-        for (var elem1 of arr1) {
+        for (var elem1 of flipped ? arr2 : arr1) {
             var disjunction: Literal[] = [];
-            for (var elem2 of arr2) {
+            for (var elem2 of flipped ? arr1 : arr2) {
                 disjunction.push({
                     polarity: true,
                     relation: relation,
-                    args: [elem1, elem2]
+                    args: flipped ? [elem2, elem1] : [elem1, elem2]
                 });
             }
             conjunction.push(disjunction);

@@ -212,8 +212,7 @@ module Planner {
             return conjunction.every((literal) => {
                 // Special case when holding an object
                 if (literal.relation == "holding") {
-                    if (literal.args[0] == node.holding) return true;
-                    else return false;
+                    return (literal.args[0] == node.holding);
                 }
 
                 // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
@@ -221,12 +220,17 @@ module Planner {
                 if (id == node.holding) return false;
 
                 var stack : number = Util.findStack(id, node.stacks);
+                console.log("stack "+stack);
                 var entity = new Util.WorldObject(id, stack, node.stacks[stack].indexOf(id));
+                console.log("id "+id);
+                console.log("indexOf "+node.stacks[stack].indexOf(id));
                 var relation = literal.relation;
                 var relativeTo = literal.args[1];
                 var ids = entity.findRelated(node.stacks, relation);
-                if (~ids.indexOf(relativeTo)) return true;
-                return false;
+                console.log("findRelated "+ids);
+                console.log("---");
+
+                return (ids.indexOf(relativeTo) != -1);
             });
         });
     }

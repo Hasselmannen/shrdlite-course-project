@@ -185,6 +185,8 @@ module Interpreter {
             });
 
             if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
+                // Flatten, since the "all" quantifier is effective on both the
+                // source entity and the location entities
                 var filtered: Literal[] = [];
                 for (var conjunction of interpretation) {
                     for (var literal of conjunction) {
@@ -262,6 +264,9 @@ module Interpreter {
                     );
                 })
             });
+
+            // Flatten, since the "all" quantifier is effective on both the
+            // source entity and the location entities
             var filtered: Literal[] = [];
             for (var conjunction of interpretation) {
                 for (var literal of conjunction) {
@@ -367,8 +372,20 @@ module Interpreter {
         return candidates.map((candidate) => candidate.id);
     }
 
+    /**
+     * Creates a conjunction of disjunctions, where a disjunction is all
+     * one value from arr1 paired with all values of arr2.
+     *
+     * @param arr1 A list of ids that have a possible relation with all elements in arr2.
+     * @param arr2 A list of ids that the elements in arr1 have a possible relation with.
+     * @param relation The relation between elements in arr1 and arr2.
+     * @returns A conjuctive normal form of literals.
+     */
     function toCNF(arr1: string[], arr2: string[], relation: string): Literal[][] {
         var conjunction: Literal[][] = [];
+
+        // Create a disjunction for each element in arr1, and push literals
+        // corresponding to this element paired with all elements in arr2 into it.
         for (var elem1 of arr1) {
             var disjunction: Literal[] = [];
             for (var elem2 of arr2) {
@@ -383,16 +400,27 @@ module Interpreter {
         return conjunction;
     }
 
+    /**
+     * Converts a conjuction of disjunctions to a disjunction of conjuctions.
+     *
+     * @param conjuction The conjunction to convert into a disjunction.
+     * @returns A DNFFormula, which is useful for the planner.
+     */
     function CNFtoDNF(conjunction: Literal[][]): DNFFormula {
         function CNFtoDNF(curr: DNFFormula, rest: Literal[][]): DNFFormula {
+            // Return our result if there is nothing more to convert
             if (!rest.length) return curr;
             var next: DNFFormula = [];
+
+            // Grab the first element on the non-converted DNF and move it
+            // to the next iteration of the CNF
             for (var literal of rest[0]) {
                 if (!curr.length) {
-                    next.push([literal]);
+                    next.push([literal]); // Nothing to map over if curr is empty
                 }
                 else {
-                    next = next.concat(curr.map((conjunction) => conjunction.concat([literal])));
+                    next = next.concat(curr.map(
+                        (conjunction) => conjunction.concat([literal])));
                 }
             }
             return CNFtoDNF(next, rest.slice(1));
@@ -400,6 +428,13 @@ module Interpreter {
         return CNFtoDNF([], conjunction);
     }
 
+    /**
+     * Checks if two literals are equal.
+     *
+     * @param lhs Left-hand-side literal.
+     * @param rhs Right-hand-side literal
+     * @returns True if the literals are equal, false otherwise.
+     */
     function equalLiterals(lhs: Literal, rhs: Literal): boolean {
         return lhs.args[0] == rhs.args[0] && lhs.args[1] == rhs.args[1] &&
                lhs.polarity == rhs.polarity && lhs.relation == rhs.relation;

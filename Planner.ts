@@ -80,13 +80,19 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        constructor(public worldObjects : { [s : string] : ObjectDefinition }) {}
-
         // TODO: Add members if necessary
+        public numObjects: number;
+        public worldObjects: { [s:string]: ObjectDefinition};
+
+        constructor(public worldState: WorldState) {
+            this.worldObjects = worldState.objects;
+            this.numObjects = [].concat.apply([], worldState.stacks).length;
+        }
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
-            // TODO: Implement this
             var edges : Edge<SearchState>[] = [];
+            var carryCost: number = 2;
+            var carryLargeCost: number = 2;
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -95,7 +101,14 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm - 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size === "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
@@ -107,10 +120,18 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm + 1);
-                edge.cost = 1; //TODO maybe change this later
+                edge.cost = 1;
+                // More expensive to carry objects
+                if (node.holding) {
+                    edge.cost += carryCost;
+                    // Even more expensive to carry large objects
+                    if (this.worldObjects[node.holding].size === "large")
+                        edge.cost += carryLargeCost;
+                }
 
                 edges.push(edge);
             }
+            var maxPickupCost: number = 10;
             // Possible to pick upp object?
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
@@ -121,7 +142,10 @@ module Planner {
                     tempStacks,
                     hold,
                     node.arm);
-                edge.cost = 1; //TODO maybe change this later
+                // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
+                // The stack can at most contain all objects.. duh
+                edge.cost =
+                    1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                 edges.push(edge);
 
@@ -136,7 +160,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
-                    edge.cost = 1; //TODO maybe change this later
+                    edge.cost = 1 + maxPickupCost; // stack size = 0
 
                     edges.push(edge);
                 } else {
@@ -157,7 +181,10 @@ module Planner {
                             tempStacks,
                             null,
                             node.arm);
-                        edge.cost = 1; //TODO maybe change this later
+                        // Cost >= 1 that decreases with increased stack size
+                        // The stack can at most contain all objects.. duh
+                        edge.cost =
+                            1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
 
                         edges.push(edge);
                     }
@@ -185,11 +212,9 @@ module Planner {
             return conjunction.every((literal) => {
                 // Special case when holding an object
                 if (literal.relation == "holding") {
-                    if (literal.args[0] == node.holding) return true;
-                    else return false;
+                    return literal.args[0] == node.holding;
                 }
 
-                // TODO: For now not very well coded stuff, need to refactor functions from Interpreter to a Util module
                 var id = literal.args[0];
                 if (id == node.holding) return false;
 
@@ -198,18 +223,18 @@ module Planner {
                 var relation = literal.relation;
                 var relativeTo = literal.args[1];
                 var ids = entity.findRelated(node.stacks, relation);
-                if (ids.indexOf(relativeTo) !== -1) return true;
-                else return false;
+
+                return Util.contains(ids, relativeTo);
             });
         });
     }
 
     function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
-        return (node) => {
+        return node => {
             // Care only about the heuristic to the 'closest' goal.
             return Math.min.apply(null, interpretation.map((conjunction) => {
-                // Add together the heuristic for each part of the conjunction
-                return conjunction.map((literal) => {
+                // Use the most expensive conjunction of the disjunction as an estimate of the cost
+                return Math.max.apply(null, conjunction.map((literal) => {
                     switch(literal.relation) {
                     case "holding": // The number of moves the arm needs to reach the object, plus one for picking it up
                         var pos = Util.findStack(literal.args[0], node.stacks);
@@ -230,14 +255,15 @@ module Planner {
                         return pos1 > pos2 ? 0 : pos2 - pos1 + 2;
                     default: return 0;
                     }
-                }).reduce((prev, curr) => prev + curr); // Recursively add together the results.
+                }));
             }));
         };
     }
 
-    function convertPathToPlan(path : SearchResult<SearchState>) : string[] {
+    function convertPathToPlan(objects : { [s:string]: ObjectDefinition}, path : SearchResult<SearchState>) : string[] {
 
         var plan : string[] = [];
+        var pickedUpAnything : boolean = false;
 
         // Go through the whole path, for each node look at the current one and the next one to find the difference
         for (var i : number = 0; i < path.path.length - 1; ++i) {
@@ -258,12 +284,23 @@ module Planner {
 
             // Check if arm picked up something
             if (!current.holding && !!next.holding) {
+                pickedUpAnything = true;
+                var holdObject = objects[next.holding];
+                var action = (i != path.path.length-2) ? "Moving" : "Taking";
+                var objDesc = " the "+holdObject.size+" "+holdObject.color+" "+holdObject.form;
+                plan.push(action + objDesc);
                 plan.push("p");
                 continue;
             }
 
             // Check if arm dropped something
             if (!!current.holding && !next.holding) {
+                if (!pickedUpAnything) {
+                    var holdObject = objects[current.holding];
+                    var objDesc = "the "+holdObject.size+" "+holdObject.color+" "+holdObject.form;
+                    plan.push("Dropping "+objDesc);
+                }
+                pickedUpAnything = false;
                 plan.push("d");
                 continue;
             }
@@ -292,18 +329,18 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
 
-        // Create parameters for a* search
+        // Create parameters for A* search
         var initialState = worldToSearchState(state);
-        var graph = new SearchStateGraph(state.objects);
+        var graph = new SearchStateGraph(state);
         var goalFunc = goal(interpretation);
         var heuristicsFunc = heuristics(interpretation);
         var timeout = 60; // 1 minute should be enough for anyone :v
 
-        // Call a* and retreive path
+        // Call A* and retreive path
         var path = aStarSearch<SearchState>(graph, initialState, goalFunc, heuristicsFunc, timeout);
 
         // Convert path to plan
-        return convertPathToPlan(path);
+        return convertPathToPlan(state.objects, path);
     }
 
 }

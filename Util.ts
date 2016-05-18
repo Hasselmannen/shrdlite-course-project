@@ -1,8 +1,8 @@
-/** Util module
+/**
+ * Util module
  *
  * Provides utility functionality for dealing with object's and stacks in a world.
  */
-
 module Util {
     /**
      * Finds the index in the stack to which the given id belongs in the given
@@ -14,7 +14,7 @@ module Util {
      */
     export function findStack(id : string, stacks : string[][]) : number {
         for (var i = stacks.length - 1; i >= 0; i--) {
-            if (stacks[i].indexOf(id) !== -1) return i;
+            if (Util.contains(stacks[i], id)) return i;
         }
         return -1;
     }
@@ -48,7 +48,7 @@ module Util {
             case "leftof":
                 return this.stack < stacks.length - 1 ? [].concat.apply([], stacks.slice(this.stack + 1)) : [];
             case "rightof":
-                return this.stack > 0 ? [].concat.apply([], stacks.slice(0, this.stack - 1)) : [];
+                return this.stack > 0 ? [].concat.apply([], stacks.slice(0, this.stack)) : [];
             case "inside":
                 return [stacks[this.stack][this.pos - 1]];
             case "ontop":
@@ -60,9 +60,11 @@ module Util {
                 return (this.stack > 0 ? stacks[this.stack - 1] : []).concat(
                     this.stack < stacks.length - 1 ? stacks[this.stack + 1] : []);
             case "above":
-                return stacks[this.stack].slice(
-                    0,
-                    stacks[this.stack].indexOf(this.id) - 1);
+                return ["floor"].concat(
+                    stacks[this.stack].slice(
+                        0,
+                        stacks[this.stack].indexOf(this.id)
+                    ));
             default:
                 throw new Error("Not implemented: " + relation);
             }
@@ -100,5 +102,12 @@ module Util {
             return isValidRelation(rhs, "above", lhs);
         }
         return true;
+    }
+
+    /**
+     * Check if list contains an element.
+     */
+    export function contains<T>(list : T[], element : T) : boolean {
+        return list.indexOf(element) !== -1;
     }
 }

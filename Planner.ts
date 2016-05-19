@@ -30,7 +30,7 @@ module Planner {
         var plans : PlannerResult[] = [];
         interpretations.forEach((interpretation) => {
             try {
-                var result : PlannerResult = <PlannerResult>interpretation;
+                var result = <PlannerResult>interpretation;
                 result.plan = planInterpretation(result.interpretation, currentState);
                 if (result.plan.length == 0) {
                     result.plan.push("That is already true!");
@@ -80,18 +80,18 @@ module Planner {
 
     class SearchStateGraph implements Graph<SearchState> {
 
-        public numObjects: number;
-        public worldObjects: { [s:string]: ObjectDefinition};
+        public numObjects : number;
+        public worldObjects : { [s : string] : ObjectDefinition };
 
-        constructor(public worldState: WorldState) {
+        constructor(public worldState : WorldState) {
             this.worldObjects = worldState.objects;
             this.numObjects = [].concat.apply([], worldState.stacks).length;
         }
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             var edges : Edge<SearchState>[] = [];
-            var carryCost: number = 2;
-            var carryLargeCost: number = 2;
+            var carryCost : number = 2;
+            var carryLargeCost : number = 2;
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -130,7 +130,7 @@ module Planner {
 
                 edges.push(edge);
             }
-            var maxPickupCost: number = 10;
+            var maxPickupCost : number = 10;
             // Possible to pick upp object?
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
@@ -144,7 +144,7 @@ module Planner {
                 // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
                 // The stack can at most contain all objects.. duh
                 edge.cost =
-                    1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
+                    1 + maxPickupCost * (this.numObjects - node.stacks[node.arm].length) / this.numObjects;
 
                 edges.push(edge);
 
@@ -183,7 +183,7 @@ module Planner {
                         // Cost >= 1 that decreases with increased stack size
                         // The stack can at most contain all objects.. duh
                         edge.cost =
-                            1 + maxPickupCost*(this.numObjects - node.stacks[node.arm].length)/this.numObjects;
+                            1 + maxPickupCost * (this.numObjects - node.stacks[node.arm].length) / this.numObjects;
 
                         edges.push(edge);
                     }
@@ -259,7 +259,7 @@ module Planner {
         };
     }
 
-    function convertPathToPlan(objects : { [s:string]: ObjectDefinition}, path : SearchResult<SearchState>) : string[] {
+    function convertPathToPlan(objects : { [s : string] : ObjectDefinition }, path : SearchResult<SearchState>) : string[] {
 
         var plan : string[] = [];
         var pickedUpAnything : boolean = false;
@@ -267,7 +267,7 @@ module Planner {
         // Go through the whole path, for each node look at the current one and the next one to find the difference
         for (var i : number = 0; i < path.path.length - 1; ++i) {
             var current = path.path[i];
-            var next = path.path[i+1];
+            var next = path.path[i + 1];
 
             // Check if arm moved left
             if (current.arm > next.arm) {
@@ -284,8 +284,7 @@ module Planner {
             // Check if arm picked up something
             if (!current.holding && !!next.holding) {
                 pickedUpAnything = true;
-                var holdObject = objects[next.holding];
-                var action = (i != path.path.length-2) ? "Moving" : "Taking";
+                var action = (i != path.path.length - 2) ? "Moving" : "Taking";
                 var objDesc = "the " + Util.shortestDescription(next.holding, objects, current.stacks);
                 plan.push(action + " " + objDesc);
                 plan.push("p");
@@ -295,7 +294,6 @@ module Planner {
             // Check if arm dropped something
             if (!!current.holding && !next.holding) {
                 if (!pickedUpAnything) {
-                    var holdObject = objects[current.holding];
                     var objDesc = "the " + Util.shortestDescription(current.holding, objects, current.stacks);
                     plan.push("Dropping " + objDesc);
                 }

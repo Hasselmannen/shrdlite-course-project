@@ -42,7 +42,7 @@ module Interpreter {
         var interpretations : InterpretationResult[] = [];
         parses.forEach((parseresult) => {
             try {
-                var result : InterpretationResult = <InterpretationResult>parseresult;
+                var result = <InterpretationResult>parseresult;
 
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
@@ -147,9 +147,9 @@ module Interpreter {
      * @param conjuncton The conjunction in which to check for invalidities.
      * @returns True if no cases of invalidities are found, false otherwise.
      */
-    function checkInsideOntop(conjunction: Literal[]): boolean {
+    function checkInsideOntop(conjunction : Literal[]) : boolean {
         // TODO: Possibly add a counter for the floor, and check if more than N objects are put ontop of the floor.
-        var occurences: string[][] = [[],[]];
+        var occurences : string[][] = [[], []];
         for (var literal of conjunction) {
             if (literal.relation == "ontop" || literal.relation == "inside") {
                 for (var i = 0; i < 2; i++) {
@@ -205,17 +205,17 @@ module Interpreter {
                 return conjunction.every((literal) => {
                     var entity = state.objects[literal.args[0]];
                     var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
-                    return Util.isValidRelation( 
-                        { form : entity.form,     size : entity.size },
+                    return Util.isValidRelation(
+                        { form: entity.form, size: entity.size },
                         literal.relation,
-                        { form : relativeTo.form, size : relativeTo.size }
+                        { form: relativeTo.form, size: relativeTo.size }
                     );
-                })
+                });
             });
             // If the "all" quantifier is effective on both the
             // source entity and the location entity, flatten the DNF
             if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
-                var filtered: Literal[] = [];
+                var filtered : Literal[] = [];
                 for (var conjunction of interpretation) {
                     for (var literal of conjunction) {
                         if (!filtered.some((elem) => equalLiterals(elem, literal)))
@@ -286,13 +286,15 @@ module Interpreter {
             interpretation = interpretation.filter((conjunction) => {
                 return conjunction.every((literal) => {
                     var entity = state.objects[state.holding];
-                    var relativeTo  = literal.args[0] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[0]];
-                    return Util.isValidRelation( 
-                        { form : entity.form,     size : entity.size },
+                    var relativeTo = literal.args[0] == "floor"
+                        ? { form: "floor", size: "" }
+                        : state.objects[literal.args[0]];
+                    return Util.isValidRelation(
+                        { form: entity.form, size: entity.size },
                         literal.relation,
-                        { form : relativeTo.form, size : relativeTo.size }
+                        { form: relativeTo.form, size: relativeTo.size }
                     );
-                })
+                });
             });
         }
         return interpretation;
@@ -308,8 +310,8 @@ module Interpreter {
      */
     function isCandidate(obj : Util.WorldObject, descr : Parser.Entity, state : WorldState) : boolean {
 
-        var o: Parser.Object = descr.object;
-        var locations: Parser.Location[] = [];
+        var o : Parser.Object = descr.object;
+        var locations : Parser.Location[] = [];
         while (o.location) {
             locations.push(o.location);
             o = o.object;
@@ -332,14 +334,13 @@ module Interpreter {
         // Make sure that, if a location is specified, it exists in the world,
         return locations.every((location) => {
             if (descr.quantifier != "all") {
-	            var candidates = findCandidates(
-	                location.entity,
-	                state,
-	                obj.findRelated(state.stacks, location.relation)
-	            );
-	            return !!candidates.length;
-       	    }
-            else {
+                var candidates = findCandidates(
+                    location.entity,
+                    state,
+                    obj.findRelated(state.stacks, location.relation)
+                );
+                return !!candidates.length;
+            } else {
                 var related = obj.findRelated(state.stacks, location.relation);
                 var candidates = findCandidates(location.entity, state);
                 return candidates.length && candidates.every((id) => Util.contains(related, id));
@@ -408,13 +409,13 @@ module Interpreter {
      * (i.e. [elem from arr1, elem from arr2]).
      * @returns A conjuctive normal form of literals.
      */
-    function toCNF(arr1: string[], arr2: string[], relation: string, flipped?: boolean): Literal[][] {
-        var conjunction: Literal[][] = [];
+    function toCNF(arr1 : string[], arr2 : string[], relation : string, flipped? : boolean) : Literal[][] {
+        var conjunction : Literal[][] = [];
 
         // Create a disjunction for each element in arr1, and push literals
         // corresponding to this element paired with all elements in arr2 into it.
         for (var elem1 of flipped ? arr2 : arr1) {
-            var disjunction: Literal[] = [];
+            var disjunction : Literal[] = [];
             for (var elem2 of flipped ? arr1 : arr2) {
                 disjunction.push({
                     polarity: true,
@@ -433,19 +434,18 @@ module Interpreter {
      * @param conjuction The conjunction to convert into a disjunction.
      * @returns A DNFFormula, which is useful for the planner.
      */
-    function CNFtoDNF(conjunction: Literal[][]): DNFFormula {
-        function CNFtoDNF(curr: DNFFormula, rest: Literal[][]): DNFFormula {
+    function CNFtoDNF(conjunction : Literal[][]) : DNFFormula {
+        function CNFtoDNF(curr : DNFFormula, rest : Literal[][]) : DNFFormula {
             // Return our result if there is nothing more to convert
             if (!rest.length) return curr;
-            var next: DNFFormula = [];
+            var next : DNFFormula = [];
 
             // Grab the first element on the non-converted DNF and move it
             // to the next iteration of the CNF
             for (var literal of rest[0]) {
                 if (!curr.length) {
                     next.push([literal]); // Nothing to map over if curr is empty
-                }
-                else {
+                } else {
                     next = next.concat(curr.map(
                         (conjunction) => conjunction.concat([literal])));
                 }

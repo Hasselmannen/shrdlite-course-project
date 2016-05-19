@@ -136,9 +136,10 @@ module Util {
         var isUnique = (propertySet : string[]) : boolean => {
             return stacks.every((stack) => {
                 return stack.every((otherKey) => {
-                    return objectKey == otherKey || !propertySet.every((prop) =>
-                        (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
-                    );
+                    return objectKey == otherKey ||
+                        !propertySet.every((prop) =>
+                            (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
+                        );
                 });
             });
         }

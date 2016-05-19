@@ -150,22 +150,52 @@ module Interpreter {
         candidates : string[],
         relativeToCandidates : string[]) : DNFFormula {
         var interpretation : DNFFormula = [];
-        for (var candidate of candidates) {
-            for (var relativeTo of relativeToCandidates) {
-                if (candidate == relativeTo) continue;
-                if (Util.isValidRelation(
-                        state.objects[candidate],
-                        cmd.location.relation,
-                        relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-                ) {
-                    interpretation.push([
-                        {
-                            polarity: true,
-                            relation: cmd.location.relation,
-                            args: [candidate, relativeTo]
-                        }
-                    ]);
+
+        if (cmd.entity.quantifier != "all" && cmd.location.entity.quantifier != "all") {
+            for (var candidate of candidates) {
+                for (var relativeTo of relativeToCandidates) {
+                    if (candidate == relativeTo) continue;
+                    if (Util.isValidRelation(
+                            state.objects[candidate],
+                            cmd.location.relation,
+                            relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                    ) {
+                        interpretation.push([
+                            {
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [candidate, relativeTo]
+                            }
+                        ]);
+                    }
                 }
+            }
+        } else {
+            // If the 'all' quantifier is applied to the location, flip the CNF logic
+            // (explained more in the actual function)
+            interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
+            interpretation = interpretation.filter((conjunction) => {
+                return conjunction.every((literal) => {
+                    var entity = state.objects[literal.args[0]];
+                    var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
+                    return Util.isValidRelation( 
+                        { form : entity.form,     size : entity.size },
+                        literal.relation,
+                        { form : relativeTo.form, size : relativeTo.size }
+                    );
+                })
+            });
+            // If the "all" quantifier is effective on both the
+            // source entity and the location entity, flatten the DNF
+            if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
+                var filtered: Literal[] = [];
+                for (var conjunction of interpretation) {
+                    for (var literal of conjunction) {
+                        if (!filtered.some((elem) => equalLiterals(elem, literal)))
+                            filtered.push(literal);
+                    }
+                }
+                interpretation = [filtered];
             }
         }
         return interpretation;
@@ -204,21 +234,39 @@ module Interpreter {
     function interpretPut(cmd : Parser.Command, state : WorldState, relativeToCandidates : string[]) : DNFFormula {
         var interpretation : DNFFormula = [];
         if (!state.holding) throw new Error("Not holding any object");
-        for (var relativeTo of relativeToCandidates) {
-            if (state.holding == relativeTo) continue;
-            if (Util.isValidRelation(
-                    state.objects[state.holding],
-                    cmd.location.relation,
-                    relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
-            ) {
-                interpretation.push([
-                    {
-                        polarity: true,
-                        relation: cmd.location.relation,
-                        args: [state.holding, relativeTo]
-                    }
-                ]);
+
+        if (cmd.location.entity.quantifier != "all") {
+            for (var relativeTo of relativeToCandidates) {
+                if (state.holding == relativeTo) continue;
+                if (Util.isValidRelation(
+                        state.objects[state.holding],
+                        cmd.location.relation,
+                        relativeTo == "floor" ? { form: "floor" } : state.objects[relativeTo])
+                ) {
+                    interpretation.push([
+                        {
+                            polarity: true,
+                            relation: cmd.location.relation,
+                            args: [state.holding, relativeTo]
+                        }
+                    ]);
+                }
             }
+        } else {
+            // Since the 'all' quantifier is applied to the location, flip the CNF logic
+            // (explained more in the actual function)
+            interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
+            interpretation = interpretation.filter((conjunction) => {
+                return conjunction.every((literal) => {
+                    var entity = state.objects[state.holding];
+                    var relativeTo  = literal.args[0] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[0]];
+                    return Util.isValidRelation( 
+                        { form : entity.form,     size : entity.size },
+                        literal.relation,
+                        { form : relativeTo.form, size : relativeTo.size }
+                    );
+                })
+            });
         }
         return interpretation;
     }
@@ -231,15 +279,15 @@ module Interpreter {
      * @param state The state of the world.
      * @returns True if the proposed candidate is valid.
      */
-    function isCandidate(obj : Util.WorldObject, descr : Parser.Object, state : WorldState) : boolean {
+    function isCandidate(obj : Util.WorldObject, descr : Parser.Entity, state : WorldState) : boolean {
 
         var properties = ["color", "size"];
-        if (descr.form != "anyform" && (!descr.object || descr.object.form != "anyform"))
+        if (descr.object.form != "anyform" && (!descr.object.object || descr.object.object.form != "anyform"))
             properties.push("form");
 
         // Make sure that all defined properties hold for the object
         var validProps : boolean = properties.every((prop) => {
-            var lhs : string = descr.object ? (<any>descr.object)[prop] : (<any>descr)[prop];
+            var lhs : string = descr.object.object ? (<any>descr.object.object)[prop] : (<any>descr.object)[prop];
             if (lhs) {
                 let rhs : string = (<any>state.objects[obj.id])[prop];
                 return lhs == rhs;
@@ -250,14 +298,23 @@ module Interpreter {
 
         // Make sure that, if a location is specified, it exists in the world,
         var validLocation : boolean = true;
-        if (descr.location) {
-            var candidates = findCandidates(
-                descr.location.entity,
-                state,
-                obj.findRelated(state.stacks, descr.location.relation)
-            );
-            validLocation = !!candidates.length;
+
+        if (descr.object.location) {
+            if (descr.quantifier != "all") {
+	            var candidates = findCandidates(
+	                descr.object.location.entity,
+	                state,
+	                obj.findRelated(state.stacks, descr.object.location.relation)
+	            );
+	            validLocation = !!candidates.length;
+       	    }
+            else {
+                var related = obj.findRelated(state.stacks, descr.object.location.relation);
+                var candidates = findCandidates(descr.object.location.entity, state);
+                validLocation = candidates.length && candidates.every((id) => !!~related.indexOf(id));
+            }
         }
+
         return validLocation;
     }
 
@@ -283,7 +340,7 @@ module Interpreter {
                 if (ids && !Util.contains(ids, obj)) return;
                 // Add to list of candidates if it is a candidate
                 var worldObject = new Util.WorldObject(obj, x, y);
-                if (isCandidate(worldObject, descr.object, state))
+                if (isCandidate(worldObject, descr, state))
                     candidates.push(worldObject);
             });
         });
@@ -291,14 +348,12 @@ module Interpreter {
         // Also add the object that the arm is holding to the list of candidates.
         if (state.holding && (!ids || ids && Util.contains(ids, state.holding))) {
             var worldObject = new Util.WorldObject(state.holding, -1, -1);
-            if (isCandidate(worldObject, descr.object, state))
+            if (isCandidate(worldObject, descr, state))
                 candidates.push(worldObject);
         }
 
         // Handle quantifiers
         switch (descr.quantifier) {
-        case "all":
-            throw new Error("Quantifier 'all' is not supported");
         case "the":
             if (candidates.length > 1) throw new Error("Ambiguous entity");
             break;
@@ -307,5 +362,79 @@ module Interpreter {
         }
 
         return candidates.map((candidate) => candidate.id);
+    }
+
+    /**
+     * Creates a conjunction of disjunctions, where a disjunction is all
+     * one value from arr1 paired with all values of arr2. (e.g. if arr1 is ["a","b"]
+     * and arr2 is ["c", "d"] the output will return 
+     * [[relation("a","c"), relation("a","d")],[relation("b","c"), relation("b","d")]])
+     *
+     * @param arr1 A list of ids that have a possible relation with all elements in arr2.
+     * @param arr2 A list of ids that the elements in arr1 have a possible relation with.
+     * @param relation The relation between elements in arr1 and arr2.
+     * @param flipped If true, flipped will flip the pairing logic, so that
+     * every value in arr2 will be paired with all the values of arr1, opposite to
+     * how it works otherwise. The pairs will still be ordered in the same way internally
+     * (i.e. [elem from arr1, elem from arr2]).
+     * @returns A conjuctive normal form of literals.
+     */
+    function toCNF(arr1: string[], arr2: string[], relation: string, flipped?: boolean): Literal[][] {
+        var conjunction: Literal[][] = [];
+
+        // Create a disjunction for each element in arr1, and push literals
+        // corresponding to this element paired with all elements in arr2 into it.
+        for (var elem1 of flipped ? arr2 : arr1) {
+            var disjunction: Literal[] = [];
+            for (var elem2 of flipped ? arr1 : arr2) {
+                disjunction.push({
+                    polarity: true,
+                    relation: relation,
+                    args: flipped ? [elem2, elem1] : [elem1, elem2]
+                });
+            }
+            conjunction.push(disjunction);
+        }
+        return conjunction;
+    }
+
+    /**
+     * Converts a conjuction of disjunctions to a disjunction of conjuctions.
+     *
+     * @param conjuction The conjunction to convert into a disjunction.
+     * @returns A DNFFormula, which is useful for the planner.
+     */
+    function CNFtoDNF(conjunction: Literal[][]): DNFFormula {
+        function CNFtoDNF(curr: DNFFormula, rest: Literal[][]): DNFFormula {
+            // Return our result if there is nothing more to convert
+            if (!rest.length) return curr;
+            var next: DNFFormula = [];
+
+            // Grab the first element on the non-converted DNF and move it
+            // to the next iteration of the CNF
+            for (var literal of rest[0]) {
+                if (!curr.length) {
+                    next.push([literal]); // Nothing to map over if curr is empty
+                }
+                else {
+                    next = next.concat(curr.map(
+                        (conjunction) => conjunction.concat([literal])));
+                }
+            }
+            return CNFtoDNF(next, rest.slice(1));
+        }
+        return CNFtoDNF([], conjunction);
+    }
+
+    /**
+     * Checks if two literals are equal.
+     *
+     * @param lhs Left-hand-side literal.
+     * @param rhs Right-hand-side literal
+     * @returns True if the literals are equal, false otherwise.
+     */
+    function equalLiterals(lhs: Literal, rhs: Literal): boolean {
+        return lhs.args[0] == rhs.args[0] && lhs.args[1] == rhs.args[1] &&
+               lhs.polarity == rhs.polarity && lhs.relation == rhs.relation;
     }
 }

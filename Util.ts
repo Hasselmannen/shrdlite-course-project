@@ -123,7 +123,7 @@ module Util {
      * @param objects A mapping from object keys to definitions.
      * @param stacks The stacks of the world.
      */
-    export function shortestUniqueObjectDescription(
+    export function shortestDescription(
         objectKey : string,
         objects : { [index : string] : ObjectDefinition },
         stacks : string[][]) : string {
@@ -133,21 +133,11 @@ module Util {
 
         // Determine if a set of properties uniquely describes an object
         var isUnique = (propertySet : string[]) : boolean => {
-            var matchFound = false;
-
             return stacks.every((stack) => {
                 return stack.every((otherKey) => {
-                    if (propertySet.every((prop) =>
+                    return objectKey == otherKey || !propertySet.every((prop) =>
                         (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
-                    )) {
-                        // We have found a match using the given properties
-                        if (matchFound) {
-                            // There is more than one object that matches
-                            return false;
-                        }
-                        matchFound = true;
-                    }
-                    return true;
+                    );
                 });
             });
         }

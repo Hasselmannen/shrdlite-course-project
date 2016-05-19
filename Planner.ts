@@ -287,7 +287,7 @@ module Planner {
                 pickedUpAnything = true;
                 var holdObject = objects[next.holding];
                 var action = (i != path.path.length-2) ? "Moving" : "Taking";
-                var objDesc = "the " + Util.shortestUniqueObjectDescription(next.holding, objects, current.stacks);
+                var objDesc = "the " + Util.shortestDescription(next.holding, objects, current.stacks);
                 plan.push(action + " " + objDesc);
                 plan.push("p");
                 continue;
@@ -297,7 +297,7 @@ module Planner {
             if (!!current.holding && !next.holding) {
                 if (!pickedUpAnything) {
                     var holdObject = objects[current.holding];
-                    var objDesc = "the " + Util.shortestUniqueObjectDescription(current.holding, objects, current.stacks);
+                    var objDesc = "the " + Util.shortestDescription(current.holding, objects, current.stacks);
                     plan.push("Dropping " + objDesc);
                 }
                 pickedUpAnything = false;

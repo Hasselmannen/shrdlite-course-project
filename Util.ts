@@ -71,7 +71,6 @@ module Util {
         }
     }
 
-    // TODO: More information needs to be taken into account
     /**
      * Checks whether or not an object can have a relation with another object.
      *

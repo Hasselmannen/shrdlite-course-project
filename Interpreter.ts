@@ -128,13 +128,37 @@ module Interpreter {
                 break;
             default:
             }
+            interpretation = interpretation.filter(checkInsideOntop);
         } else if (cmd.command == "put") {
             var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
             var relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
             interpretation = interpretPut(cmd, state, relativeToCandidates);
         }
+
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
         return interpretation;
+    }
+
+    /**
+     * Checks a conjunction if more than one object is put inside/ontop of
+     * another obhect (with the exception of the floor).
+     *
+     * @param conjuncton The conjunction in which to check for invalidities.
+     * @returns True if no cases are found where more than one object is put
+     * inside/intop of another object, and false otherwise.
+     */
+    function checkInsideOntop(conjunction: Literal[]): boolean {
+        // TODO: Possibly add a counter for the floor, and check if more than N objects are put ontop of the floor.
+        var occurences: string[] = [];
+        for (var literal of conjunction) {
+            if (literal.relation == "ontop" || literal.relation == "inside") {
+                var id = literal.args[1];
+                if (id == "floor") continue;
+                if (Util.contains(occurences, id)) return false;
+                occurences.push(id);
+            }
+        }
+        return true;
     }
 
     /**

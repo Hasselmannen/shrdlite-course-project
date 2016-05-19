@@ -171,6 +171,8 @@ module Interpreter {
                 }
             }
         } else {
+            // If the 'all' quantifier is applied to the location, flip the CNF logic
+            // (explained more in the actual function)
             interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
             interpretation = interpretation.filter((conjunction) => {
                 return conjunction.every((literal) => {
@@ -183,9 +185,9 @@ module Interpreter {
                     );
                 })
             });
+            // If the "all" quantifier is effective on both the
+            // source entity and the location entity, flatten the DNF
             if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
-                // Flatten, since the "all" quantifier is effective on both the
-                // source entity and the location entities
                 var filtered: Literal[] = [];
                 for (var conjunction of interpretation) {
                     for (var literal of conjunction) {
@@ -251,6 +253,8 @@ module Interpreter {
                 }
             }
         } else {
+            // Since the 'all' quantifier is applied to the location, flip the CNF logic
+            // (explained more in the actual function)
             interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
             interpretation = interpretation.filter((conjunction) => {
                 return conjunction.every((literal) => {
@@ -362,11 +366,17 @@ module Interpreter {
 
     /**
      * Creates a conjunction of disjunctions, where a disjunction is all
-     * one value from arr1 paired with all values of arr2.
+     * one value from arr1 paired with all values of arr2. (e.g. if arr1 is ["a","b"]
+     * and arr2 is ["c", "d"] the output will return 
+     * [[relation("a","c"), relation("a","d")],[relation("b","c"), relation("b","d")]])
      *
      * @param arr1 A list of ids that have a possible relation with all elements in arr2.
      * @param arr2 A list of ids that the elements in arr1 have a possible relation with.
      * @param relation The relation between elements in arr1 and arr2.
+     * @param flipped If true, flipped will flip the pairing logic, so that
+     * every value in arr2 will be paired with all the values of arr1, opposite to
+     * how it works otherwise. The pairs will still be ordered in the same way internally
+     * (i.e. [elem from arr1, elem from arr2]).
      * @returns A conjuctive normal form of literals.
      */
     function toCNF(arr1: string[], arr2: string[], relation: string, flipped?: boolean): Literal[][] {

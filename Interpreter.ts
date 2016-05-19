@@ -114,7 +114,6 @@ module Interpreter {
 
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
-            console.log(candidates);
             if (candidates.length < 1) throw new Error("No such entity found");
 
             switch (cmd.command) {

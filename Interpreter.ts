@@ -237,6 +237,9 @@ module Interpreter {
      * @returns A list of list of Literal, representing a formula in disjunctive normal form.
      */
     function interpretTake(command : Parser.Command, worldState : WorldState, candidates : string[]) : DNFFormula {
+        if (candidates.length > 1 && command.entity.quantifier == "all") {
+            throw new Error("Can only take a single object");
+        }
         var interpretation : DNFFormula = [];
         for (var candidate of candidates) {
             interpretation.push([

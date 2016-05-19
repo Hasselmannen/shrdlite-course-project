@@ -141,21 +141,23 @@ module Interpreter {
 
     /**
      * Checks a conjunction if more than one object is put inside/ontop of
-     * another obhect (with the exception of the floor).
+     * another object (with the exception of the floor). Also checks so that
+     * a specific object is not put inside/ontop of more than one object.
      *
      * @param conjuncton The conjunction in which to check for invalidities.
-     * @returns True if no cases are found where more than one object is put
-     * inside/intop of another object, and false otherwise.
+     * @returns True if no cases of invalidities are found, false otherwise.
      */
     function checkInsideOntop(conjunction: Literal[]): boolean {
         // TODO: Possibly add a counter for the floor, and check if more than N objects are put ontop of the floor.
-        var occurences: string[] = [];
+        var occurences: string[][] = [[],[]];
         for (var literal of conjunction) {
             if (literal.relation == "ontop" || literal.relation == "inside") {
-                var id = literal.args[1];
-                if (id == "floor") continue;
-                if (Util.contains(occurences, id)) return false;
-                occurences.push(id);
+                for (var i = 0; i < 2; i++) {
+                    var id = literal.args[i];
+                    if (id == "floor") continue;
+                    if (Util.contains(occurences[i], id)) return false;
+                    occurences[i].push(id);
+                }
             }
         }
         return true;

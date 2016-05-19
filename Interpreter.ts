@@ -114,6 +114,7 @@ module Interpreter {
 
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
+            console.log(candidates);
             if (candidates.length < 1) throw new Error("No such entity found");
 
             switch (cmd.command) {
@@ -281,13 +282,19 @@ module Interpreter {
      */
     function isCandidate(obj : Util.WorldObject, descr : Parser.Entity, state : WorldState) : boolean {
 
+        var o: Parser.Object = descr.object;
+        var locations: Parser.Location[] = [];
+        while (o.location) {
+            locations.push(o.location);
+            o = o.object;
+        }
+
         var properties = ["color", "size"];
-        if (descr.object.form != "anyform" && (!descr.object.object || descr.object.object.form != "anyform"))
-            properties.push("form");
+        if (o.form != "anyform") properties.push("form");
 
         // Make sure that all defined properties hold for the object
         var validProps : boolean = properties.every((prop) => {
-            var lhs : string = descr.object.object ? (<any>descr.object.object)[prop] : (<any>descr.object)[prop];
+            var lhs : string = (<any>o)[prop];
             if (lhs) {
                 let rhs : string = (<any>state.objects[obj.id])[prop];
                 return lhs == rhs;
@@ -297,25 +304,21 @@ module Interpreter {
         if (!validProps) return false;
 
         // Make sure that, if a location is specified, it exists in the world,
-        var validLocation : boolean = true;
-
-        if (descr.object.location) {
+        return locations.every((location) => {
             if (descr.quantifier != "all") {
 	            var candidates = findCandidates(
 	                descr.object.location.entity,
 	                state,
 	                obj.findRelated(state.stacks, descr.object.location.relation)
 	            );
-	            validLocation = !!candidates.length;
+	            return !!candidates.length;
        	    }
             else {
                 var related = obj.findRelated(state.stacks, descr.object.location.relation);
                 var candidates = findCandidates(descr.object.location.entity, state);
-                validLocation = candidates.length && candidates.every((id) => !!~related.indexOf(id));
+                return candidates.length && candidates.every((id) => !!~related.indexOf(id));
             }
-        }
-
-        return validLocation;
+        });
     }
 
     /**

@@ -84,6 +84,8 @@ module Util {
         relation : string,
         rhs : { form? : string, size? : string }
     ) : boolean {
+        if (rhs.form == "floor" && !(relation == "ontop" || relation == "above")) throw new Error("Nothing can be " + relation + " the floor.");
+        if (lhs.form == "floor" && relation != "under") throw new Error("The floor cannot be " + relation + " anything.");
         if (relation == "ontop") {
             if (rhs.form == "box" || rhs.form == "ball") return false;
             if (lhs.form == "ball" && rhs.form != "floor") return false;

@@ -307,16 +307,16 @@ module Interpreter {
         return locations.every((location) => {
             if (descr.quantifier != "all") {
 	            var candidates = findCandidates(
-	                descr.object.location.entity,
+	                location.entity,
 	                state,
-	                obj.findRelated(state.stacks, descr.object.location.relation)
+	                obj.findRelated(state.stacks, location.relation)
 	            );
 	            return !!candidates.length;
        	    }
             else {
-                var related = obj.findRelated(state.stacks, descr.object.location.relation);
-                var candidates = findCandidates(descr.object.location.entity, state);
-                return candidates.length && candidates.every((id) => !!~related.indexOf(id));
+                var related = obj.findRelated(state.stacks, location.relation);
+                var candidates = findCandidates(location.entity, state);
+                return candidates.length && candidates.every((id) => Util.contains(related, id));
             }
         });
     }

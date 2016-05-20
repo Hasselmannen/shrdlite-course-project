@@ -106,34 +106,36 @@ module Interpreter {
      * @throws An error when no valid interpretations can be found
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-
         var interpretation : DNFFormula;
         var candidates : string[];
+        var relativeToCandidates : string[];
 
         if (cmd.command == "move" || cmd.command == "take") {
-
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
             if (candidates.length < 1) throw new Error("No such entity found");
             if (Util.contains(candidates, "floor")) throw new Error("Can not pick up the floor.");
-
-            switch (cmd.command) {
-            case "move":
-                var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
-                var relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
-                interpretation = interpretMove(cmd, state, candidates, relativeToCandidates);
-                break;
-            case "take":
-                interpretation = interpretTake(cmd, state, candidates);
-                break;
-            default:
-            }
-            interpretation = interpretation.filter(checkInsideOntop);
-        } else if (cmd.command == "put") {
-            var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
-            var relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
-            interpretation = interpretPut(cmd, state, relativeToCandidates);
         }
+
+        if (cmd.command == "move" || cmd.command == "put") {
+            var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
+            relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
+        }
+
+        switch (cmd.command) {
+        case "move":
+            interpretation = interpretMove(cmd, state, candidates, relativeToCandidates);
+            break;
+        case "take":
+            interpretation = interpretTake(cmd, state, candidates);
+            break;
+        case "put":
+            interpretation = interpretPut(cmd, state, relativeToCandidates);
+            break;
+        default:
+            throw new Error("Unknown command");
+        }
+        interpretation = interpretation.filter(checkInsideOntop);
 
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
         return interpretation;
@@ -240,17 +242,11 @@ module Interpreter {
         if (candidates.length > 1 && command.entity.quantifier == "all") {
             throw new Error("Can only take a single object");
         }
-        var interpretation : DNFFormula = [];
-        for (var candidate of candidates) {
-            interpretation.push([
-                {
-                    polarity: true,
-                    relation: "holding",
-                    args: [candidate]
-                }
-            ]);
-        }
-        return interpretation;
+        return candidates.map(candidate => [{
+            polarity: true,
+            relation: "holding",
+            args: [candidate]
+        }]);
     }
 
     /**
@@ -438,7 +434,7 @@ module Interpreter {
      * @returns A DNFFormula, which is useful for the planner.
      */
     function CNFtoDNF(conjunction : Literal[][]) : DNFFormula {
-        function CNFtoDNF(curr : DNFFormula, rest : Literal[][]) : DNFFormula {
+        var innerCNFtoDNF = (curr : DNFFormula, rest : Literal[][]) : DNFFormula => {
             // Return our result if there is nothing more to convert
             if (!rest.length) return curr;
             var next : DNFFormula = [];
@@ -453,9 +449,9 @@ module Interpreter {
                         (conjunction) => conjunction.concat([literal])));
                 }
             }
-            return CNFtoDNF(next, rest.slice(1));
+            return innerCNFtoDNF(next, rest.slice(1));
         }
-        return CNFtoDNF([], conjunction);
+        return innerCNFtoDNF([], conjunction);
     }
 
     /**

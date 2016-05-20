@@ -106,13 +106,6 @@ module Util {
     }
 
     /**
-     * Check if list contains an element.
-     */
-    export function contains<T>(list : T[], element : T) : boolean {
-        return list.indexOf(element) !== -1;
-    }
-
-    /**
      * Returns the shortest unique description of an object in the world, using only
      * the object properties, if possible.
      *
@@ -128,23 +121,52 @@ module Util {
         objectKey : string,
         objects : { [index : string] : ObjectDefinition },
         stacks : string[][]) : string {
-
         var propertyCombinations = [["form"], ["color", "form"], ["size", "form"]];
         var objectDef = objects[objectKey];
 
         // Determine if a set of properties uniquely describes an object
-        var isUnique = (propertySet : string[]) : boolean => {
-            return stacks.every((stack) => {
-                return stack.every((otherKey) => {
-                    return objectKey == otherKey ||
-                        !propertySet.every((prop) =>
-                            (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
-                        );
-                });
-            });
-        }
-        var uniquePropertySets = propertyCombinations.filter((propertySet) => isUnique(propertySet));
-        var selectedPropertySet = uniquePropertySets ? uniquePropertySets[0] : ["size", "color", "form"];
-        return selectedPropertySet.reduce((prev, curr) => prev + " " + (objects[objectKey] as any)[curr], "");
+        var isUnique = (propertySet : string[]) : boolean =>
+            stacks.every(stack =>
+                stack.every(otherKey =>
+                    objectKey == otherKey ||
+                    !propertySet.every((prop) =>
+                        (objectDef as any)[prop] == (objects[otherKey] as any)[prop]
+                    )
+                )
+            );
+        // Find the first property set that contains enough information
+        var selectedPropertySet = find(propertyCombinations, isUnique, ["size", "color", "form"]);
+
+        // Fetch the values of the properties and combine to a single string
+        var values = selectedPropertySet.map(property => (objects[objectKey] as any)[property]);
+        return values.join(" ");
     }
+
+    /**
+     * Check if list contains a given element.
+     * 
+     * @param list The list to look in.
+     * @param element The element to look for.
+     */
+    export function contains<T>(list : T[], element : T) : boolean {
+        return list.indexOf(element) !== -1;
+    }
+
+    /**
+     * Finds the first element in a list where a condition holds, or a given
+     * fallback value if not found.
+     * 
+     * @param list The list to look in.
+     * @param condition The boolean predicate to check for.
+     * @param notFoundValue The value returned if the condition does not hold for any element.
+     */
+    export function find<T>(list : T[], condition : (x : T) => boolean, notFoundValue : T) : T {
+        for (var element of list) {
+            if (condition(element)) {
+                return element;
+            }
+        }
+        return notFoundValue;
+    }
+
 }

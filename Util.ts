@@ -20,6 +20,24 @@ module Util {
     }
 
     /**
+     * Finds the stack index and position of the object with a gived id.
+     *
+     * @param id The id of the object to be located.
+     * @param stacks The list of the world's stacks.
+     * @returns An array of two elements where the first is the stack index, and the other is the location in the stack, or undefined if not found.
+     */
+    export function findStackAndPosition(id : string, stacks : string[][]) : number[] {
+        for (var x = 0; x < stacks.length; x++) {
+            for (var y = 0; y < stacks[x].length; y++) {
+                if (stacks[x][y] == id) {
+                    return [x, y];
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
      * A class containing positional data about an object in a world.
      */
     export class WorldObject {

@@ -59,6 +59,11 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
+    const MOVE_COST = 1;
+    const CARRY_COST = 2;
+    const CARRY_LARGE_COST = 2;
+    const MAX_PICKUP_COST = 10;
+
     class SearchState {
         constructor(
             public stacks : Stack[],
@@ -90,8 +95,6 @@ module Planner {
 
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             var edges : Edge<SearchState>[] = [];
-            var carryCost : number = 2;
-            var carryLargeCost : number = 2;
             // Possible to move left?
             if (node.arm > 0) {
                 var edge = new Edge<SearchState>();
@@ -100,13 +103,13 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm - 1);
-                edge.cost = 1;
+                edge.cost = MOVE_COST;
                 // More expensive to carry objects
                 if (node.holding) {
-                    edge.cost += carryCost;
+                    edge.cost += CARRY_COST;
                     // Even more expensive to carry large objects
                     if (this.worldObjects[node.holding].size === "large")
-                        edge.cost += carryLargeCost;
+                        edge.cost += CARRY_LARGE_COST;
                 }
 
                 edges.push(edge);
@@ -119,32 +122,30 @@ module Planner {
                     node.stacks.map((stack) => stack.slice()),
                     node.holding,
                     node.arm + 1);
-                edge.cost = 1;
+                edge.cost = MOVE_COST;
                 // More expensive to carry objects
                 if (node.holding) {
-                    edge.cost += carryCost;
+                    edge.cost += CARRY_COST;
                     // Even more expensive to carry large objects
                     if (this.worldObjects[node.holding].size === "large")
-                        edge.cost += carryLargeCost;
+                        edge.cost += CARRY_LARGE_COST;
                 }
 
                 edges.push(edge);
             }
-            var maxPickupCost : number = 10;
-            // Possible to pick upp object?
+            // Possible to pick up object?
             if (!node.holding && node.stacks[node.arm].length > 0) {
                 var edge = new Edge<SearchState>();
                 edge.from = node;
                 var tempStacks = node.stacks.map((stack) => stack.slice());
-                var hold : string = tempStacks[node.arm].pop();
+                var hold = tempStacks[node.arm].pop();
                 edge.to = new SearchState(
                     tempStacks,
                     hold,
                     node.arm);
                 // Cost >= 1 that decreases with stack size => easier to pick up objects higher up
                 // The stack can at most contain all objects.. duh
-                edge.cost =
-                    1 + maxPickupCost * (this.numObjects - node.stacks[node.arm].length) / this.numObjects;
+                edge.cost = pickUpCost(this.numObjects, node.stacks, node.arm);
 
                 edges.push(edge);
 
@@ -159,7 +160,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
-                    edge.cost = 1 + maxPickupCost; // stack size = 0
+                    edge.cost = 1 + MAX_PICKUP_COST; // stack size = 0
 
                     edges.push(edge);
                 } else {
@@ -182,8 +183,7 @@ module Planner {
                             node.arm);
                         // Cost >= 1 that decreases with increased stack size
                         // The stack can at most contain all objects.. duh
-                        edge.cost =
-                            1 + maxPickupCost * (this.numObjects - node.stacks[node.arm].length) / this.numObjects;
+                        edge.cost = pickUpCost(this.numObjects, node.stacks, node.arm);
 
                         edges.push(edge);
                     }
@@ -197,6 +197,11 @@ module Planner {
         compareNodes(lhs : SearchState, rhs : SearchState) : number {
             return 0; // Honestly, we probably really don't care about this function at all. Likely unusued.
         }
+
+    }
+
+    function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
+        return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
     }
 
     /**
@@ -228,30 +233,34 @@ module Planner {
         });
     }
 
-    function heuristics(interpretation : Interpreter.DNFFormula) : (node : SearchState) => number {
+    function heuristics(interpretation : Interpreter.DNFFormula, numObjects : number) : (node : SearchState) => number {
         return node => {
             // Care only about the heuristic to the 'closest' goal.
             return Math.min.apply(null, interpretation.map((conjunction) => {
                 // Use the most expensive conjunction of the disjunction as an estimate of the cost
                 return Math.max.apply(null, conjunction.map((literal) => {
                     switch(literal.relation) {
-                    case "holding": // The number of moves the arm needs to reach the object, plus one for picking it up
-                        var pos = Util.findStack(literal.args[0], node.stacks);
-                        return pos == -1 ? 0 : Math.abs(pos - node.arm) + 1;
+                    case "holding":
+                        var pos = Util.findStackAndPosition(literal.args[0], node.stacks);
+                        if (!pos) return 0;
+                        var distanceToStack = Math.abs(pos[0] - node.arm) + 1;
+                        var itemsOnTop = (node.stacks[pos[0]].length - 1) - pos[1];
+                        const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST; // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
+                        return distanceToStack + itemsOnTop * COST_PER_ON_TOP + 1;
                     case "leftof": // Distance that the an object has to be moved to be left of another object
-                        var pos1 = Util.findStack(literal.args[0], node.stacks);
-                        var pos2 = Util.findStack(literal.args[1], node.stacks);
-                        pos1 = pos1 == -1 ? node.arm : pos1;
-                        pos2 = pos2 == -1 ? node.arm : pos2;
+                        var stack1 = Util.findStack(literal.args[0], node.stacks);
+                        var stack2 = Util.findStack(literal.args[1], node.stacks);
+                        stack1 = stack1 == -1 ? node.arm : stack1;
+                        stack2 = stack2 == -1 ? node.arm : stack2;
                         // Distance plus one because it has to be left of the stack,
                         // and another plus one because it has to at least be dropped
-                        return pos1 < pos2 ? 0 : pos1 - pos2 + 2;
+                        return stack1 < stack2 ? 0 : stack1 - stack2 + 2;
                     case "rightof":
-                        var pos1 = Util.findStack(literal.args[0], node.stacks);
-                        var pos2 = Util.findStack(literal.args[1], node.stacks);
-                        pos1 = pos1 == -1 ? node.arm : pos1;
-                        pos2 = pos2 == -1 ? node.arm : pos2;
-                        return pos1 > pos2 ? 0 : pos2 - pos1 + 2;
+                        var stack1 = Util.findStack(literal.args[0], node.stacks);
+                        var stack2 = Util.findStack(literal.args[1], node.stacks);
+                        stack1 = stack1 == -1 ? node.arm : stack1;
+                        stack2 = stack2 == -1 ? node.arm : stack2;
+                        return stack1 > stack2 ? 0 : stack2 - stack1 + 2;
                     default: return 0;
                     }
                 }));
@@ -324,7 +333,7 @@ module Planner {
         var initialState = worldToSearchState(state);
         var graph = new SearchStateGraph(state);
         var goalFunc = goal(interpretation);
-        var heuristicsFunc = heuristics(interpretation);
+        var heuristicsFunc = heuristics(interpretation, graph.numObjects);
         var timeout = 60; // 1 minute should be enough for anyone :v
 
         // Call A* and retreive path

@@ -239,6 +239,61 @@ module Planner {
             return Math.min.apply(null, interpretation.map((conjunction) => {
                 // Use the most expensive conjunction of the disjunction as an estimate of the cost
                 return Math.max.apply(null, conjunction.map((literal) => {
+
+                    // Set up some utility functions for heuristics
+
+                    const moveCost = (stack1 : number, stack2 : number) : number  => {
+                        var distanceToStack = Math.abs(stack1 - stack2);
+                        return MOVE_COST * distanceToStack;
+                    }
+
+                    const removeAboveCost = (pos : number[]) : number => {
+                        var itemsOnTop = (node.stacks[pos[0]].length - 1) - pos[1];
+                        // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
+                        const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST;
+                        return itemsOnTop * COST_PER_ON_TOP + 1; 
+                    }
+
+                    const closestTo = (from : number, a : number, b : number) : number =>
+                        Math.abs(a - from) < Math.abs(b - from) ? a : b;
+
+                    const leftRightHeuristic = (right : boolean) : number => {
+                        var stack1 = Util.findStack(literal.args[0], node.stacks);
+                        var stack2 = Util.findStack(literal.args[1], node.stacks);
+                        stack1 = stack1 == -1 ? node.arm : stack1;
+                        stack2 = stack2 == -1 ? node.arm : stack2;
+                        // Distance plus one because it has to be left of the stack,
+                        // and another plus one because it has to at least be dropped
+                        if (right) [stack1, stack2] = [stack2, stack1]; 
+                        return stack1 < stack2 ? 0 : stack1 - stack2 + 2;
+                    }
+
+                    const onTopInsideHeuristic = () : number => {
+                        var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
+                        var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);
+
+                        // Give up if either is held or not in world
+                        if (!pos1 || !pos2) {
+                            return 0;
+                        }
+
+                        if (pos1[0] != pos2[0]) {
+                            var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
+                            // Need to at least move to the closest one and move it to the other stack, as well as remove items ontop of either
+                            return moveCost(node.arm, closestStack) + moveCost(pos1[0], pos2[0]) + removeAboveCost(pos1) + removeAboveCost(pos2);
+                        } else {
+                            if (pos1[1] == pos2[1] + 1) {
+                                // Goal fulfilled
+                                return 0;
+                            } else if (pos1[1] < pos2[1]) {
+                                // TODO: Can do smarter things here
+                                return removeAboveCost(pos2);
+                            } else {
+                                return removeAboveCost(pos1);
+                            }
+                        }
+                    }
+
                     switch(literal.relation) {
                     case "holding":
                         var pos = Util.findStackAndPosition(literal.args[0], node.stacks);
@@ -248,25 +303,13 @@ module Planner {
                         const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST; // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
                         return distanceToStack + itemsOnTop * COST_PER_ON_TOP + 1;
                     case "leftof": // Distance that the an object has to be moved to be left of another object
-                        var stack1 = Util.findStack(literal.args[0], node.stacks);
-                        var stack2 = Util.findStack(literal.args[1], node.stacks);
-                        stack1 = stack1 == -1 ? node.arm : stack1;
-                        stack2 = stack2 == -1 ? node.arm : stack2;
-                        // Distance plus one because it has to be left of the stack,
-                        // and another plus one because it has to at least be dropped
-                        return stack1 < stack2 ? 0 : stack1 - stack2 + 2;
+                        return leftRightHeuristic(false);
                     case "rightof":
-                        var stack1 = Util.findStack(literal.args[0], node.stacks);
-                        var stack2 = Util.findStack(literal.args[1], node.stacks);
-                        stack1 = stack1 == -1 ? node.arm : stack1;
-                        stack2 = stack2 == -1 ? node.arm : stack2;
-                        return stack1 > stack2 ? 0 : stack2 - stack1 + 2;
+                        return leftRightHeuristic(true);
                     case "inside":
-                        // TODO: Implement
-                        return 0;
+                        return onTopInsideHeuristic();
                     case "ontop":
-                        // TODO: Implement
-                        return 0;
+                        return onTopInsideHeuristic();
                     case "under":
                         // TODO: Implement
                         return 0;

@@ -261,6 +261,21 @@ module Planner {
                         stack1 = stack1 == -1 ? node.arm : stack1;
                         stack2 = stack2 == -1 ? node.arm : stack2;
                         return stack1 > stack2 ? 0 : stack2 - stack1 + 2;
+                    case "inside":
+                        // TODO: Implement
+                        return 0;
+                    case "ontop":
+                        // TODO: Implement
+                        return 0;
+                    case "under":
+                        // TODO: Implement
+                        return 0;
+                    case "above":
+                        // TODO: Implement
+                        return 0;
+                    case "beside":
+                        // TODO: Implement
+                        return 0;
                     default: return 0;
                     }
                 }));

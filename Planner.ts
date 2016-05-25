@@ -347,7 +347,7 @@ module Planner {
 
                         var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
                         // Need to at least move to closest, move one closer to the other and having removed all on top of one of them
-                        return moveCost(node.arm, closestStack) + distFromBetween * MOVE_COST + Math.min(removeAboveCost(pos1) + removeAboveCost(pos2));
+                        return estimateMoveCost(node.arm, closestStack) + distFromBetween * MOVE_COST + Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
                     default: return 0;
                     }
                 }));

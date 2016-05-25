@@ -1,8 +1,11 @@
 # Shrdlite Readme
 
-## Interpreter.ts
+## `Interpreter.ts`
 
-### The 'all' quantifier
+For the interpreter we chose to extend the project with support for the `all` quantifier. Apart from that, there is no functionality beyond that of the standard shrdlite project. The code may,
+however not be the same as the one submitted earlier. 
+
+### The `all` Quantifier
 
 The `all` quantifier can be applied to a statement in three ways:
 
@@ -16,11 +19,11 @@ Worth noting is that statements such as `put a ball beside all boxes` is not onl
 
 Furthermore, `all objects` really mean all, so for instance, `put an object beside all objects` will be interpreted, but not in a way that is satisfiable; it would be interpreted as trying to put an object beside itself.
 
-## Util.ts
+## `Util.ts`
 
 `Util.ts` contains a number of functions used throughout the rest of the program. It also contains the `WorldObject` class which describes in what stack an object is and what position in that stack it has.
 
-## Planner.ts
+## `Planner.ts`
 
 Apart from the standard functionality of the planner (i.e. using A* to find a plan for the
 interpretation found by the interpreter) our planner also has the following functionality:
@@ -31,4 +34,8 @@ One of the extensions we chose to implement was an extended cost function. Inste
 
 ### Action Description
 
-When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambigous description of the object.
+When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambigous (if there is one) description of the object.
+
+## `Graph.ts`
+
+`Graph.ts` has no new functionality compared to the standard A* search. The code may not be identical to the one handed in earlier, but we've made no extensions to this part of the shrdlite project.

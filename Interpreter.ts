@@ -200,8 +200,8 @@ module Interpreter {
             // If the 'all' quantifier is applied to the location, flip the CNF logic
             // (explained more in the actual function)
             interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
-            interpretation = interpretation.filter((conjunction) => {
-                return conjunction.every((literal) => {
+            interpretation = interpretation.filter(conjunction => {
+                return conjunction.every(literal => {
                     var entity = state.objects[literal.args[0]];
                     var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
                     return Util.isValidRelation(
@@ -306,7 +306,7 @@ module Interpreter {
      */
     function isCandidate(obj : Util.WorldObject, descr : Parser.Entity, state : WorldState) : boolean {
 
-        var o : Parser.Object = descr.object;
+        var o = descr.object;
         var locations : Parser.Location[] = [];
         while (o.location) {
             locations.push(o.location);
@@ -317,17 +317,17 @@ module Interpreter {
         if (o.form != "anyform") properties.push("form");
 
         // Make sure that all defined properties hold for the object
-        var validProps : boolean = properties.every((prop) => {
-            var lhs : string = (<any>o)[prop];
+        var validProps = properties.every((prop) => {
+            var lhs : string = (o as any)[prop];
             if (lhs) {
-                let rhs : string = (<any>state.objects[obj.id])[prop];
+                let rhs : string = (state.objects[obj.id] as any)[prop];
                 return lhs == rhs;
             }
             return true;
         });
         if (!validProps) return false;
 
-        // Make sure that, if a location is specified, it exists in the world,
+        // Make sure that, if a location is specified, it exists in the world
         return locations.every((location) => {
             if (descr.quantifier != "all") {
                 var candidates = findCandidates(
@@ -372,7 +372,7 @@ module Interpreter {
         });
 
         // Also add the object that the arm is holding to the list of candidates.
-        if (state.holding && (!ids || ids && Util.contains(ids, state.holding))) {
+        if (state.holding && (!ids || Util.contains(ids, state.holding))) {
             var worldObject = new Util.WorldObject(state.holding, -1, -1);
             if (isCandidate(worldObject, descr, state))
                 candidates.push(worldObject);
@@ -443,7 +443,7 @@ module Interpreter {
                     next.push([literal]); // Nothing to map over if curr is empty
                 } else {
                     next = next.concat(curr.map(
-                        (conjunction) => conjunction.concat([literal])));
+                        conjunction => conjunction.concat([literal])));
                 }
             }
             return innerCNFtoDNF(next, rest.slice(1));

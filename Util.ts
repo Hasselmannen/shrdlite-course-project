@@ -4,6 +4,16 @@
  * Provides utility functionality for dealing with object's and stacks in a world.
  */
 module Util {
+
+    /**
+     * A class representing a position in the world.
+     * x is the index of the stack
+     * y is the distance to the floor, so if a stack only have one element its value of y is 0
+     */
+    export class Position {
+        constructor(public x : number, public y : number) { }
+    }
+
     /**
      * Finds the index in the stack to which the given id belongs in the given
      * list of stacks.
@@ -24,13 +34,13 @@ module Util {
      *
      * @param id The id of the object to be located.
      * @param stacks The list of the world's stacks.
-     * @returns An array of two elements where the first is the stack index, and the other is the location in the stack, or undefined if not found.
+     * @returns The position, or undefined if not found.
      */
-    export function findStackAndPosition(id : string, stacks : string[][]) : number[] {
+    export function findStackAndPosition(id : string, stacks : string[][]) : Position {
         for (var x = 0; x < stacks.length; x++) {
             for (var y = 0; y < stacks[x].length; y++) {
                 if (stacks[x][y] == id) {
-                    return [x, y];
+                    return new Position(x, y);
                 }
             }
         }

@@ -263,8 +263,8 @@ module Planner {
                         return MOVE_COST * distanceToStack;
                     }
 
-                    const estimateRemoveAboveCost = (pos : number[]) : number => {
-                        var itemsOnTop = (node.stacks[pos[0]].length - 1) - pos[1];
+                    const estimateRemoveAboveCost = (pos : Util.Position) : number => {
+                        var itemsOnTop = (node.stacks[pos.x].length - 1) - pos.y;
                         // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
                         const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST;
                         return itemsOnTop * COST_PER_ON_TOP + 1; 
@@ -293,15 +293,15 @@ module Planner {
                             return 0;
                         }
 
-                        if (pos1[0] != pos2[0]) {
-                            var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
+                        if (pos1.x != pos2.x) {
+                            var closestStack = closestTo(node.arm, pos1.x, pos2.x);
                             // Need to at least move to the closest one and move it to the other stack, as well as remove items ontop of either
-                            return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1[0], pos2[0]) + estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2);
+                            return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1.x, pos2.x) + estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2);
                         } else {
-                            if (pos1[1] == pos2[1] + 1) {
+                            if (pos1.y == pos2.y + 1) {
                                 // Goal fulfilled
                                 return 0;
-                            } else if (pos1[1] < pos2[1]) {
+                            } else if (pos1.y < pos2.y) {
                                 // TODO: Can do smarter things here
                                 return estimateRemoveAboveCost(pos2);
                             } else {
@@ -314,8 +314,8 @@ module Planner {
                     case "holding":
                         var pos = Util.findStackAndPosition(literal.args[0], node.stacks);
                         if (!pos) return 0;
-                        var distanceToStack = Math.abs(pos[0] - node.arm) + 1;
-                        var itemsOnTop = (node.stacks[pos[0]].length - 1) - pos[1];
+                        var distanceToStack = Math.abs(pos.x - node.arm) + 1;
+                        var itemsOnTop = (node.stacks[pos.x].length - 1) - pos.y;
                         const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST; // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
                         return distanceToStack + itemsOnTop * COST_PER_ON_TOP + 1;
                     case "leftof": // Distance that the an object has to be moved to be left of another object
@@ -340,12 +340,12 @@ module Planner {
                         }
 
                         // Find shortest distance needed for them to be between each other
-                        var distFromBetween = Math.min(Math.abs(pos1[0] - pos2[0] - 1), Math.abs(pos1[0] - pos2[0] + 1));
+                        var distFromBetween = Math.min(Math.abs(pos1.x - pos2.x - 1), Math.abs(pos1.x - pos2.x + 1));
                         if (distFromBetween == 0) {
                             return 0;
                         }
 
-                        var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
+                        var closestStack = closestTo(node.arm, pos1.x, pos2.x);
                         // Need to at least move to closest, move one closer to the other and having removed all on top of one of them
                         return estimateMoveCost(node.arm, closestStack) + distFromBetween * MOVE_COST + Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
                     default: return 0;

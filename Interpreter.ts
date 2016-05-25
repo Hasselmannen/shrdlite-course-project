@@ -112,7 +112,7 @@ module Interpreter {
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
             if (candidates.length < 1) throw new Error("No such entity found");
-            if (Util.contains(candidates, "floor")) throw new Error("Can not pick up the floor.");
+            if (Util.contains(candidates, "floor")) throw new Error("Can not pick up the floor");
         }
 
         // If the command is move or put we find the matching target objects matching the location description

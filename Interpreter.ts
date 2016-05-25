@@ -185,7 +185,7 @@ module Interpreter {
 
         // Special case when we don't have the "all" quanitfier
         if (cmd.entity.quantifier != "all" && cmd.location.entity.quantifier != "all") {
-			for (var candidate of candidates) {
+            for (var candidate of candidates) {
                 for (var relativeTo of relativeToCandidates) {
                     if (candidate == relativeTo) continue;
                     if (Util.isValidRelation(
@@ -204,7 +204,7 @@ module Interpreter {
                 }
             }
 
-        	return interpretation;
+            return interpretation;
         }
 
          // If the 'all' quantifier is applied to the location, flip the CNF logic
@@ -221,6 +221,7 @@ module Interpreter {
                 );
             });
         });
+
         // If the "all" quantifier is effective on both the
         // source entity and the location entity, flatten the DNF
         if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
@@ -268,6 +269,7 @@ module Interpreter {
         var interpretation : DNFFormula = [];
         if (!state.holding) throw new Error("Not holding any object");
 
+        // Case when we don't have "all" quantifier
         if (cmd.location.entity.quantifier != "all") {
             for (var relativeTo of relativeToCandidates) {
                 if (state.holding == relativeTo) continue;
@@ -285,25 +287,28 @@ module Interpreter {
                     ]);
                 }
             }
-        } else {
-            // Since the 'all' quantifier is applied to the location, flip the CNF logic
-            // (explained more in the actual function)
-            interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
-            interpretation = interpretation.filter((conjunction) => {
-                return conjunction.every((literal) => {
-                    var entity = state.objects[state.holding];
-                    var relativeTo = literal.args[0] == "floor"
-                        ? { form: "floor", size: "" }
-                        : state.objects[literal.args[0]];
-                    return Util.isValidRelation(
-                        { form: entity.form, size: entity.size },
-                        literal.relation,
-                        { form: relativeTo.form, size: relativeTo.size }
-                    );
-                });
-            });
+
+            return interpretation;
         }
-        return interpretation;
+        
+        // Since the 'all' quantifier is applied to the location, flip the CNF logic
+        // (explained more in the actual function)
+        interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
+        interpretation = interpretation.filter((conjunction) => {
+            return conjunction.every((literal) => {
+                var entity = state.objects[state.holding];
+                var relativeTo = literal.args[0] == "floor"
+                    ? { form: "floor", size: "" }
+                    : state.objects[literal.args[0]];
+                return Util.isValidRelation(
+                    { form: entity.form, size: entity.size },
+                    literal.relation,
+                    { form: relativeTo.form, size: relativeTo.size }
+                );
+            });
+        });
+        
+        return interpretation;        
     }
 
     /**

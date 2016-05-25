@@ -2,8 +2,7 @@
 
 ## `Interpreter.ts`
 
-For the interpreter we chose to extend the project with support for the `all` quantifier. Apart from that, there is no functionality beyond that of the standard shrdlite project. The code may,
-however not be the same as the one submitted earlier. 
+For the interpreter we chose to extend the project with support for the `all` quantifier. Apart from that, there is no functionality beyond that of the standard shrdlite project. The code may, however not be the same as the one submitted earlier.
 
 ### The `all` Quantifier
 
@@ -25,8 +24,7 @@ Furthermore, `all objects` really mean all, so for instance, `put an object besi
 
 ## `Planner.ts`
 
-Apart from the standard functionality of the planner (i.e. using A* to find a plan for the
-interpretation found by the interpreter) our planner also has the following functionality:
+Apart from the standard functionality of the planner (i.e. using A* to find a plan for the interpretation found by the interpreter) our planner also has the following functionality:
 
 ### Extended Cost Function
 

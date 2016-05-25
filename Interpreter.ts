@@ -94,6 +94,7 @@ module Interpreter {
 
     //////////////////////////////////////////////////////////////////////
     // private functions
+
     /**
      * Interpret a parsed command into a logic formula describing the intended result.
      * 
@@ -137,7 +138,7 @@ module Interpreter {
         }
 
         // TODO: Sanity checks???
-        interpretation = interpretation.filter(checkInsideOntop);
+        interpretation = interpretation.filter(checkInsideOnTop);
 
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
         return interpretation;
@@ -151,7 +152,7 @@ module Interpreter {
      * @param conjuncton The conjunction in which to check for invalidities.
      * @returns True if no cases of invalidities are found, false otherwise.
      */
-    function checkInsideOntop(conjunction : Literal[]) : boolean {
+    function checkInsideOnTop(conjunction : Literal[]) : boolean {
         // TODO: Possibly add a counter for the floor, and check if more than N objects are put ontop of the floor.
         var occurences : string[][] = [[], []];
         for (var literal of conjunction) {
@@ -473,7 +474,7 @@ module Interpreter {
      * @param rhs Right-hand-side literal
      * @returns True if the literals are equal, false otherwise.
      */
-    function equalLiterals(lhs: Literal, rhs: Literal): boolean {
+    function equalLiterals(lhs : Literal, rhs : Literal) : boolean {
         return lhs.args[0] == rhs.args[0] && lhs.args[1] == rhs.args[1] &&
                lhs.polarity == rhs.polarity && lhs.relation == rhs.relation;
     }

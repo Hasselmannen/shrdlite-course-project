@@ -12,7 +12,7 @@
 * for the robot to put the world into a state compatible with the
 * user's command, i.e. to achieve what the user wanted.
 *
-* The planner should use your A* search implementation to find a plan.
+* The planner uses A* search to find a plan.
 */
 module Planner {
 
@@ -62,7 +62,7 @@ module Planner {
     // Const contants used to calculate cost and heuristics
     const MOVE_COST = 1; // Cost for moving the arm 1 step
     const CARRY_COST = 2; // Additional cost for carrying an object 1 step
-    const CARRY_LARGE_COST = 2; // Additional cost for carrying a large object 1 step
+    const CARRY_LARGE_COST = 2; // Additional cost for carrying a large object 1 step (cost = move+carry+carryLarge)
     const MAX_PICKUP_COST = 10; // The maximum cost for picking up an object, actual cost depends on size of stack.
 
     // The cost of picking up an object in a stack
@@ -70,6 +70,7 @@ module Planner {
     // @param stacks the stacks of objects in the world
     // @param stack the index of the stack we want to pick up from
     function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
+        // cost = (Base action cost = 1) + extra pickup cost
         return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
     }
 

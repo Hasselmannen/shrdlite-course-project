@@ -20,10 +20,7 @@
 * written using conjunctions and disjunctions of these literals.
 *
 * In general, the module can take a list of possible parses and return
-* a list of possible interpretations, but the code to handle this has
-* already been written for you. The only part you need to implement is
-* the core interpretation function, namely `interpretCommand`, which produces a
-* single interpretation for a single command.
+* a list of possible interpretations.
 */
 module Interpreter {
 

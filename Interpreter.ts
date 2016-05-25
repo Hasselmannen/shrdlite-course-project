@@ -137,7 +137,7 @@ module Interpreter {
             throw new Error("Unknown command");
         }
 
-        // TODO: Sanity checks???
+        // Remove imposible interpretations
         interpretation = interpretation.filter(checkInsideOnTop);
 
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
@@ -208,7 +208,7 @@ module Interpreter {
             return interpretation;
         }
 
-         // If the 'all' quantifier is applied to the location, flip the CNF logic
+        // If the 'all' quantifier is applied to the location, flip the CNF logic
         // (explained more in the actual function)
         interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
         interpretation = interpretation.filter(conjunction => {

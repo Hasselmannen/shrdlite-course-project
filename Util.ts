@@ -57,10 +57,11 @@ module Util {
          * @param pos This object's position in its stack.
          */
         constructor(
-        ) { }
             public id : string,
             public stack : number,
             public pos : number
+        ) { }
+
 
         /**
          * Given a list of stacks and a positional relation, returns the

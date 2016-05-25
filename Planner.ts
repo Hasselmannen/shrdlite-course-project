@@ -173,6 +173,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
+                    // cost = base action cost + max pickup cost
                     edge.cost = 1 + MAX_PICKUP_COST; // stack size = 0
 
                     edges.push(edge);
@@ -332,8 +333,21 @@ module Planner {
                         // TODO: Implement
                         return 0;
                     case "beside":
-                        // TODO: Implement
-                        return 0;
+                        var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
+                        var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);
+                        if (!pos1 || !pos2) {
+                            return 0;
+                        }
+
+                        // Find shortest distance needed for them to be between each other
+                        var distFromBetween = Math.min(Math.abs(pos1[0] - pos2[0] - 1), Math.abs(pos1[0] - pos2[0] + 1));
+                        if (distFromBetween == 0) {
+                            return 0;
+                        }
+
+                        var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
+                        // Need to at least move to closest, move one closer to the other and having removed all on top of one of them
+                        return moveCost(node.arm, closestStack) + distFromBetween * MOVE_COST + Math.min(removeAboveCost(pos1) + removeAboveCost(pos2));
                     default: return 0;
                     }
                 }));

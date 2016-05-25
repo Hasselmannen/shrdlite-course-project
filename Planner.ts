@@ -257,6 +257,9 @@ module Planner {
                 return Math.max.apply(null, conjunction.map((literal) => {
 
                     // Set up some utility functions for heuristics
+                    
+                    const closestTo = (from : number, a : number, b : number) : number =>
+                        Math.abs(a - from) < Math.abs(b - from) ? a : b;
 
                     // Estimates the cost of moving the arm, ignores cost of carrying objects
                     const estimateMoveCost = (stack1 : number, stack2 : number) : number => {
@@ -271,18 +274,47 @@ module Planner {
                         return itemsOnTop * COST_PER_ON_TOP + 1; 
                     }
 
-                    const closestTo = (from : number, a : number, b : number) : number =>
-                        Math.abs(a - from) < Math.abs(b - from) ? a : b;
+                    const estimateMoveToSameStackCost = (pos1 : Util.Position, pos2 : Util.Position) => {
+                        var closestStack = closestTo(node.arm, pos1.x, pos2.x);
+                        // Need to at least move to the closest one and move it to the other
+                        // stack, as well as remove items ontop of one of them
+                        return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1.x, pos2.x) + Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
+                    }
 
                     const leftRightHeuristic = (right : boolean) : number => {
                         var stack1 = Util.findStack(literal.args[0], node.stacks);
                         var stack2 = Util.findStack(literal.args[1], node.stacks);
                         stack1 = stack1 == -1 ? node.arm : stack1;
                         stack2 = stack2 == -1 ? node.arm : stack2;
+
+                        if (right) [stack1, stack2] = [stack2, stack1];
+
                         // Distance plus one because it has to be left of the stack,
                         // and another plus one because it has to at least be dropped
-                        if (right) [stack1, stack2] = [stack2, stack1]; 
                         return stack1 < stack2 ? 0 : stack1 - stack2 + 2;
+                    }
+
+                    const underAboveHeuristic = (above : boolean) : number => {
+                        var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
+                        var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);
+
+                        // Give up if either is held or not in world
+                        if (!pos1 || !pos2) {
+                            return 0;
+                        }
+
+                        if (above) [pos1, pos2] = [pos2, pos1]; 
+
+                        if (pos1.x != pos2.x) {
+                            return estimateMoveToSameStackCost(pos1, pos2);
+                        }
+                        
+                        if (pos1.y < pos2.y) {
+                            // Goal fulfilled
+                            return 0;
+                        }
+                        // Need to at least reach down to the lowest one
+                        return estimateRemoveAboveCost(pos2);
                     }
 
                     const onTopInsideHeuristic = () : number => {
@@ -295,9 +327,7 @@ module Planner {
                         }
 
                         if (pos1.x != pos2.x) {
-                            var closestStack = closestTo(node.arm, pos1.x, pos2.x);
-                            // Need to at least move to the closest one and move it to the other stack, as well as remove items ontop of either
-                            return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1.x, pos2.x) + estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2);
+                            return estimateMoveToSameStackCost(pos1, pos2);
                         } else {
                             if (pos1.y == pos2.y + 1) {
                                 // Goal fulfilled
@@ -328,11 +358,9 @@ module Planner {
                     case "ontop":
                         return onTopInsideHeuristic();
                     case "under":
-                        // TODO: Implement
-                        return 0;
+                        return underAboveHeuristic(false);
                     case "above":
-                        // TODO: Implement
-                        return 0;
+                        return underAboveHeuristic(true);
                     case "beside":
                         var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
                         var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);

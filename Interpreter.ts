@@ -138,7 +138,7 @@ module Interpreter {
 
         // TODO: Sanity checks???
         interpretation = interpretation.filter(checkInsideOntop);
-        
+
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
         return interpretation;
     }
@@ -180,10 +180,12 @@ module Interpreter {
         state : WorldState,
         candidates : string[],
         relativeToCandidates : string[]) : DNFFormula {
+        
         var interpretation : DNFFormula = [];
 
+        // Special case when we don't have the "all" quanitfier
         if (cmd.entity.quantifier != "all" && cmd.location.entity.quantifier != "all") {
-            for (var candidate of candidates) {
+			for (var candidate of candidates) {
                 for (var relativeTo of relativeToCandidates) {
                     if (candidate == relativeTo) continue;
                     if (Util.isValidRelation(
@@ -201,34 +203,37 @@ module Interpreter {
                     }
                 }
             }
-        } else {
-            // If the 'all' quantifier is applied to the location, flip the CNF logic
-            // (explained more in the actual function)
-            interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
-            interpretation = interpretation.filter(conjunction => {
-                return conjunction.every(literal => {
-                    var entity = state.objects[literal.args[0]];
-                    var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
-                    return Util.isValidRelation(
-                        { form: entity.form, size: entity.size },
-                        literal.relation,
-                        { form: relativeTo.form, size: relativeTo.size }
-                    );
-                });
-            });
-            // If the "all" quantifier is effective on both the
-            // source entity and the location entity, flatten the DNF
-            if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
-                var filtered : Literal[] = [];
-                for (var conjunction of interpretation) {
-                    for (var literal of conjunction) {
-                        if (!filtered.some((elem) => equalLiterals(elem, literal)))
-                            filtered.push(literal);
-                    }
-                }
-                interpretation = [filtered];
-            }
+
+        	return interpretation;
         }
+
+         // If the 'all' quantifier is applied to the location, flip the CNF logic
+        // (explained more in the actual function)
+        interpretation = CNFtoDNF(toCNF(candidates, relativeToCandidates, cmd.location.relation, cmd.location.entity.quantifier == "all"));
+        interpretation = interpretation.filter(conjunction => {
+            return conjunction.every(literal => {
+                var entity = state.objects[literal.args[0]];
+                var relativeTo  = literal.args[1] == "floor" ? { form : "floor", size : "" } : state.objects[literal.args[1]];
+                return Util.isValidRelation(
+                    { form: entity.form, size: entity.size },
+                    literal.relation,
+                    { form: relativeTo.form, size: relativeTo.size }
+                );
+            });
+        });
+        // If the "all" quantifier is effective on both the
+        // source entity and the location entity, flatten the DNF
+        if (cmd.entity.quantifier == "all" && cmd.location.entity.quantifier == "all") {
+            var filtered : Literal[] = [];
+            for (var conjunction of interpretation) {
+                for (var literal of conjunction) {
+                    if (!filtered.some((elem) => equalLiterals(elem, literal)))
+                        filtered.push(literal);
+                }
+            }
+            interpretation = [filtered];
+        }
+
         return interpretation;
     }
 

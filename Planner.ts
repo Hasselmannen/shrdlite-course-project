@@ -59,10 +59,11 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
-    const MOVE_COST = 1;
-    const CARRY_COST = 2;
-    const CARRY_LARGE_COST = 2;
-    const MAX_PICKUP_COST = 10;
+    // Const contants used to calculate cost and heuristics
+    const MOVE_COST = 1; // Cost for moving the arm 1 step
+    const CARRY_COST = 2; // Additional cost for carrying an object 1 step
+    const CARRY_LARGE_COST = 2; // Additional cost for carrying a large object 1 step
+    const MAX_PICKUP_COST = 10; // The maximum cost for picking up an object, actual cost depends on size of stack.
 
     class SearchState {
         constructor(

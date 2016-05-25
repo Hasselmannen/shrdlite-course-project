@@ -103,15 +103,14 @@ function aStarSearch<Node> (
 
         // Add nodes connected to outgoing edges to the frontier
         for (var edge of graph.outgoingEdges(frontierNode.node)) {
-            if (!visited.contains(edge.to)) {
-                frontier.enqueue(new FrontierNode(edge.to, frontierNode, frontierNode.cost + edge.cost));
-            }
+            if (visited.contains(edge.to)) continue;
+            frontier.enqueue(new FrontierNode(edge.to, frontierNode, frontierNode.cost + edge.cost));
         }
 
         // Give up if search has taken too long
         var now = Date.now();
         if (now - startTime > timeout * 1000) {
-            break;
+            throw new Error("Timeout");
         }
     }
     // No path was found

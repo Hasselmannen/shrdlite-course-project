@@ -256,12 +256,13 @@ module Planner {
 
                     // Set up some utility functions for heuristics
 
-                    const moveCost = (stack1 : number, stack2 : number) : number  => {
+                    // Estimates the cost of moving the arm, ignores cost of carrying objects
+                    const estimateMoveCost = (stack1 : number, stack2 : number) : number => {
                         var distanceToStack = Math.abs(stack1 - stack2);
                         return MOVE_COST * distanceToStack;
                     }
 
-                    const removeAboveCost = (pos : number[]) : number => {
+                    const estimateRemoveAboveCost = (pos : number[]) : number => {
                         var itemsOnTop = (node.stacks[pos[0]].length - 1) - pos[1];
                         // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
                         const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST;
@@ -294,16 +295,16 @@ module Planner {
                         if (pos1[0] != pos2[0]) {
                             var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
                             // Need to at least move to the closest one and move it to the other stack, as well as remove items ontop of either
-                            return moveCost(node.arm, closestStack) + moveCost(pos1[0], pos2[0]) + removeAboveCost(pos1) + removeAboveCost(pos2);
+                            return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1[0], pos2[0]) + estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2);
                         } else {
                             if (pos1[1] == pos2[1] + 1) {
                                 // Goal fulfilled
                                 return 0;
                             } else if (pos1[1] < pos2[1]) {
                                 // TODO: Can do smarter things here
-                                return removeAboveCost(pos2);
+                                return estimateRemoveAboveCost(pos2);
                             } else {
-                                return removeAboveCost(pos1);
+                                return estimateRemoveAboveCost(pos1);
                             }
                         }
                     }

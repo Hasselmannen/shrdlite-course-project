@@ -160,6 +160,7 @@ module Planner {
                         tempStacks,
                         null,
                         node.arm);
+                    // cost = base action cost + max pickup cost
                     edge.cost = 1 + MAX_PICKUP_COST; // stack size = 0
 
                     edges.push(edge);

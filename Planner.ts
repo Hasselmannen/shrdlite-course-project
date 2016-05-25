@@ -65,6 +65,15 @@ module Planner {
     const CARRY_LARGE_COST = 2; // Additional cost for carrying a large object 1 step
     const MAX_PICKUP_COST = 10; // The maximum cost for picking up an object, actual cost depends on size of stack.
 
+    // The cost of picking up an object in a stack
+    // @param numObjects the number of objects in the world
+    // @param stacks the stacks of objects in the world
+    // @param stack the index of the stack we want to pick up from
+    function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
+        return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
+    }
+
+    // The state of the world in a given instance, used for a*
     class SearchState {
         constructor(
             public stacks : Stack[],
@@ -77,6 +86,7 @@ module Planner {
         }
     }
 
+    // Converts a world state to a search state
     function worldToSearchState(worldState : WorldState) : SearchState {
         return new SearchState(
             worldState.stacks.map((stack) => stack.slice()),
@@ -84,6 +94,7 @@ module Planner {
             worldState.arm);
     }
 
+    // The graph of search states used for a*. Contains the algorithm used to calculate cost.
     class SearchStateGraph implements Graph<SearchState> {
 
         public numObjects : number;
@@ -94,6 +105,7 @@ module Planner {
             this.numObjects = [].concat.apply([], worldState.stacks).length;
         }
 
+        // Returns the possible search states reachable from this search state and the cost to do so
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             var edges : Edge<SearchState>[] = [];
             // Possible to move left?
@@ -195,14 +207,11 @@ module Planner {
             return edges;
         }
 
+        // Never used, but demanded by interface.
         compareNodes(lhs : SearchState, rhs : SearchState) : number {
-            return 0; // Honestly, we probably really don't care about this function at all. Likely unusued.
+            return 0;
         }
 
-    }
-
-    function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
-        return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
     }
 
     /**

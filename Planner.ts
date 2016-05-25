@@ -235,9 +235,13 @@ module Planner {
 
     function heuristics(interpretation : Interpreter.DNFFormula, numObjects : number) : (node : SearchState) => number {
         return node => {
-            // Care only about the heuristic to the 'closest' goal.
+
+            // The interpretation contains a disjunction (list) of conjunctions (possible goal states).
+            // We return the estimated cost of the cheapest conjunction (goal). We estimate the cost
+            // of a conjunction by taking estimating the cost of performing the most expensive literal
+            // (part), the sum of all parts may be an overestimate.
+
             return Math.min.apply(null, interpretation.map((conjunction) => {
-                // Use the most expensive conjunction of the disjunction as an estimate of the cost
                 return Math.max.apply(null, conjunction.map((literal) => {
 
                     // Set up some utility functions for heuristics

@@ -107,6 +107,7 @@ module Interpreter {
         var candidates : string[];
         var relativeToCandidates : string[];
 
+        // If the command is move or take we find the objects in the world matching the object description
         if (cmd.command == "move" || cmd.command == "take") {
             if (!cmd.entity) throw new Error("No entity specified in move");
             candidates = findCandidates(cmd.entity, state);
@@ -114,11 +115,13 @@ module Interpreter {
             if (Util.contains(candidates, "floor")) throw new Error("Can not pick up the floor.");
         }
 
+        // If the command is move or put we find the matching target objects matching the location description
         if (cmd.command == "move" || cmd.command == "put") {
             var ids = cmd.location.entity.object.form == "floor" ? ["floor"] : undefined;
             relativeToCandidates = findCandidates(cmd.location.entity, state, ids);
         }
 
+        // Call interpret function depending on which command we have
         switch (cmd.command) {
         case "move":
             interpretation = interpretMove(cmd, state, candidates, relativeToCandidates);
@@ -132,8 +135,10 @@ module Interpreter {
         default:
             throw new Error("Unknown command");
         }
-        interpretation = interpretation.filter(checkInsideOntop);
 
+        // TODO: Sanity checks???
+        interpretation = interpretation.filter(checkInsideOntop);
+        
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
         return interpretation;
     }

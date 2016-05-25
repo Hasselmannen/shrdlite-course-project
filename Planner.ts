@@ -59,11 +59,21 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
-    const MOVE_COST = 1;
-    const CARRY_COST = 2;
-    const CARRY_LARGE_COST = 2;
-    const MAX_PICKUP_COST = 10;
+    // Const contants used to calculate cost and heuristics
+    const MOVE_COST = 1; // Cost for moving the arm 1 step
+    const CARRY_COST = 2; // Additional cost for carrying an object 1 step
+    const CARRY_LARGE_COST = 2; // Additional cost for carrying a large object 1 step
+    const MAX_PICKUP_COST = 10; // The maximum cost for picking up an object, actual cost depends on size of stack.
 
+    // The cost of picking up an object in a stack
+    // @param numObjects the number of objects in the world
+    // @param stacks the stacks of objects in the world
+    // @param stack the index of the stack we want to pick up from
+    function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
+        return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
+    }
+
+    // The state of the world in a given instance, used for a*
     class SearchState {
         constructor(
             public stacks : Stack[],
@@ -76,6 +86,7 @@ module Planner {
         }
     }
 
+    // Converts a world state to a search state
     function worldToSearchState(worldState : WorldState) : SearchState {
         return new SearchState(
             worldState.stacks.map((stack) => stack.slice()),
@@ -83,6 +94,7 @@ module Planner {
             worldState.arm);
     }
 
+    // The graph of search states used for a*. Contains the algorithm used to calculate cost.
     class SearchStateGraph implements Graph<SearchState> {
 
         public numObjects : number;
@@ -93,6 +105,7 @@ module Planner {
             this.numObjects = [].concat.apply([], worldState.stacks).length;
         }
 
+        // Returns the possible search states reachable from this search state and the cost to do so
         outgoingEdges(node : SearchState) : Edge<SearchState>[] {
             var edges : Edge<SearchState>[] = [];
             // Possible to move left?
@@ -195,14 +208,11 @@ module Planner {
             return edges;
         }
 
+        // Never used, but demanded by interface.
         compareNodes(lhs : SearchState, rhs : SearchState) : number {
-            return 0; // Honestly, we probably really don't care about this function at all. Likely unusued.
+            return 0;
         }
 
-    }
-
-    function pickUpCost(numObjects : number, stacks : string[][], stack : number) : number {
-        return 1 + MAX_PICKUP_COST * (numObjects - stacks[stack].length) / numObjects;
     }
 
     /**
@@ -236,9 +246,13 @@ module Planner {
 
     function heuristics(interpretation : Interpreter.DNFFormula, numObjects : number) : (node : SearchState) => number {
         return node => {
-            // Care only about the heuristic to the 'closest' goal.
+
+            // The interpretation contains a disjunction (list) of conjunctions (possible goal states).
+            // We return the estimated cost of the cheapest conjunction (goal). We estimate the cost
+            // of a conjunction by taking estimating the cost of performing the most expensive literal
+            // (part), the sum of all parts may be an overestimate.
+
             return Math.min.apply(null, interpretation.map((conjunction) => {
-                // Use the most expensive conjunction of the disjunction as an estimate of the cost
                 return Math.max.apply(null, conjunction.map((literal) => {
 
                     // Set up some utility functions for heuristics
@@ -318,8 +332,21 @@ module Planner {
                         // TODO: Implement
                         return 0;
                     case "beside":
-                        // TODO: Implement
-                        return 0;
+                        var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
+                        var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);
+                        if (!pos1 || !pos2) {
+                            return 0;
+                        }
+
+                        // Find shortest distance needed for them to be between each other
+                        var distFromBetween = Math.min(Math.abs(pos1[0] - pos2[0] - 1), Math.abs(pos1[0] - pos2[0] + 1));
+                        if (distFromBetween == 0) {
+                            return 0;
+                        }
+
+                        var closestStack = closestTo(node.arm, pos1[0], pos2[0]);
+                        // Need to at least move to closest, move one closer to the other and having removed all on top of one of them
+                        return moveCost(node.arm, closestStack) + distFromBetween * MOVE_COST + Math.min(removeAboveCost(pos1) + removeAboveCost(pos2));
                     default: return 0;
                     }
                 }));

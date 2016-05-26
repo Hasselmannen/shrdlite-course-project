@@ -116,18 +116,18 @@ module Util {
         if (rhs.form == "floor" && !(relation == "ontop" || relation == "above")) throw new Error("Nothing can be " + relation + " the floor");
         if (lhs.form == "floor" && relation != "under") throw new Error("The floor cannot be " + relation + " anything");
         if (relation == "ontop") {
-            if (rhs.form == "box" || rhs.form == "ball") return false;
-            if (lhs.form == "ball" && rhs.form != "floor") return false;
-            if (lhs.size == "large" && rhs.size == "small") return false;
-            if (lhs.form == "box" && rhs.size == "small" && (rhs.form == "brick" || rhs.form == "pyramid")) return false;
-            if (lhs.form == "box" && lhs.size == "large" && rhs.form == "pyramid") return false;
+            if (rhs.form == "box" || rhs.form == "ball") return false; // Nothing can put on top of a ball of a box
+            if (lhs.form == "ball" && rhs.form != "floor") return false; // Balls can only be put on top of the floor (or inside boxes) 
+            if (lhs.size == "large" && rhs.size == "small") return false; // Large objects can not be put on top of small objects
+            if (lhs.form == "box" && rhs.size == "small" && (rhs.form == "brick" || rhs.form == "pyramid")) return false; // Boxes can not be placed on small bricks or pyramids
+            if (lhs.form == "box" && lhs.size == "large" && rhs.form == "pyramid") return false; // Large pyramids can not be put on pyramids
         } else if (relation == "inside") {
-            if (rhs.form != "box") return false;
-            if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick" && lhs.form != "table")) return false;
-            if (rhs.size == "small" && lhs.size == "large") return false;
+            if (rhs.form != "box") return false; // Objects can only be put inside boxes
+            if (rhs.size == lhs.size && (lhs.form != "ball" && lhs.form != "brick" && lhs.form != "table")) return false; // Only balls, bricks and tables can be put in equally sized boxes
+            if (rhs.size == "small" && lhs.size == "large") return false; // Large objects can not be put inside small boxes
         } else if (relation == "above") {
-            if (rhs.form == "ball") return false;
-            if (lhs.size == "large" && rhs.size == "small") return false;
+            if (rhs.form == "ball") return false; // Nothing can be put above a ball
+            if (lhs.size == "large" && rhs.size == "small") return false; // Large objects can not be above small objects
         } else if (relation == "under") {
             return isValidRelation(rhs, "above", lhs);
         }

@@ -284,31 +284,6 @@ module Planner {
             return Math.min.apply(null, interpretation.map((conjunction) => {
                 return Math.max.apply(null, conjunction.map((literal) => {
 
-                    // Set up some utility functions for heuristics
-                    
-                    const closestTo = (from : number, a : number, b : number) : number =>
-                        Math.abs(a - from) < Math.abs(b - from) ? a : b;
-
-                    // Estimates the cost of moving the arm, ignores cost of carrying objects
-                    const estimateMoveCost = (stack1 : number, stack2 : number) : number => {
-                        var distanceToStack = Math.abs(stack1 - stack2);
-                        return MOVE_COST * distanceToStack;
-                    }
-
-                    const estimateRemoveAboveCost = (pos : Util.Position) : number => {
-                        var itemsOnTop = (node.stacks[pos.x].length - 1) - pos.y;
-                        // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
-                        const costPerOnTop = 1 + CARRY_COST + 1 + MOVE_COST;
-                        return itemsOnTop * costPerOnTop + 1; 
-                    }
-
-                    const estimateMoveToSameStackCost = (pos1 : Util.Position, pos2 : Util.Position) => {
-                        var closestStack = closestTo(node.arm, pos1.x, pos2.x);
-                        // Need to at least move to the closest one and move it to the other
-                        // stack, as well as remove items ontop of one of them
-                        return estimateMoveCost(node.arm, closestStack) + estimateMoveCost(pos1.x, pos2.x) + Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
-                    }
-
                     const leftRightHeuristic = (right : boolean) : number => {
                         var pos1 = Util.findStackAndPosition(literal.args[0], node.stacks);
                         var pos2 = Util.findStackAndPosition(literal.args[1], node.stacks);

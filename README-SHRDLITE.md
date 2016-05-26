@@ -12,7 +12,7 @@ The `all` quantifier can be applied to a statement in three ways:
 2. To specify that one or more objects should have a relation with `all <something>`.
 3. To specify that `all <something>` are related to `all <something>`.
 
-The difference between the `all` quantifier and the `any` quantifier is that any object that has a relation with `all something` makes up a conjunction, where all of these relations are present. This is done in the `toCNF` function, whose result is then passed to the `CNFtoDNF` function where the `DNFFormula` is created. In the third of the cases, another pass is made where everything is flattened into a single conjunction.
+The difference between the `all` quantifier and the `any` quantifier is that any object that has a relation with `all <something>` makes up a conjunction, where all of these relations are present. This is done in the `toCNF` function, whose result is then passed to the `CNFtoDNF` function where the `DNFFormula` is created. In the third of the cases, another pass is made where everything is flattened into a single conjunction.
 
 Worth noting is that statements such as `put a ball beside all boxes` is not only interpreted as "put one ball so that it is beside all boxes", but also as "make sure all the boxes have at least one ball beside them", which might not be very intuitive in every case.
 

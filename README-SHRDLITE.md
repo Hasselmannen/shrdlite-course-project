@@ -40,4 +40,4 @@ We have implemented quite an advanced heuristic, we are not sure if it is on ext
 
 ## `Graph.ts`
 
-`Graph.ts` has no new functionality compared to the standard A* search. The code may not be identical to the one handed in earlier, but we've made no extensions to this part of the shrdlite project.
+`Graph.ts` has no new functionality compared to the standard A* search. The code may not be identical to the one handed in earlier, but we've made no extensions to this part of the shrdlite project. Overall it should be a fairly straightforward implementation of A* search.

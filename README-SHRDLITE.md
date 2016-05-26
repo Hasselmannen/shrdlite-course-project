@@ -12,11 +12,11 @@ The `all` quantifier can be applied to a statement in three ways:
 2. To specify that one or more objects should have a relation with `all <something>`.
 3. To specify that `all <something>` are related to `all <something>`.
 
-The difference between the `all` quantifier and the `any` quantifier is that any object that has a relation with `all something` makes up a conjunction, where all of these relations are present. This is done in the `toCNF` function, whose result is then passed to the `CNFtoDNF` function where the `DNFFormula` is created. In the third of the cases, another pass is made where everything is flattened into a single conjunction.
+The difference between the `all` quantifier and the `any` quantifier is that any object that has a relation with `all <something>` makes up a conjunction, where all of these relations are present. This is done in the `toCNF` function, whose result is then passed to the `CNFtoDNF` function where the `DNFFormula` is created. In the third of the cases, another pass is made where everything is flattened into a single conjunction.
 
 Worth noting is that statements such as `put a ball beside all boxes` is not only interpreted as "put one ball so that it is beside all boxes", but also as "make sure all the boxes have at least one ball beside them", which might not be very intuitive in every case.
 
-Furthermore, `all objects` really mean all, so for instance, `put an object beside all objects` will be interpreted, but not in a way that is satisfiable; it would be interpreted as trying to put an object beside itself.
+Furthermore, `all objects` really mean all, so for instance, `put the large green box beside all objects` will be interpreted, but not in a way that is satisfiable; it would be interpreted as trying to put the specified box beside itself.
 
 ## `Util.ts`
 
@@ -32,7 +32,7 @@ One of the extensions we chose to implement was an extended cost function. Inste
 
 ### Action Description
 
-When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambigous (if there is one) description of the object.
+When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambiguous (if there is one) description of the object.
 
 ### Heuristic
 

@@ -245,11 +245,11 @@ module Planner {
     }
 
     function heuristics(interpretation : Interpreter.DNFFormula, numObjects : number) : (node : SearchState) => number {
-        
+
         return node => {
 
             // Internal functions
-            
+
             const closestTo = (from : number, a : number, b : number) : number =>
                 Math.abs(a - from) < Math.abs(b - from) ? a : b;
 
@@ -264,7 +264,7 @@ module Planner {
                 var itemsOnTop = (node.stacks[pos.x].length - 1) - pos.y;
                 // Drop somewhere else and go back. Assumes picking up and dropping costs 1.
                 const COST_PER_ON_TOP = 1 + CARRY_COST + 1 + MOVE_COST;
-                return itemsOnTop * COST_PER_ON_TOP + 1; 
+                return itemsOnTop * COST_PER_ON_TOP + 1;
             }
 
             // Estimates the cost of moving an element from one position to another in the same stack
@@ -307,7 +307,9 @@ module Planner {
 
                         var closestStack = closestTo(node.arm, pos1.x, pos2.x);
                         // Need to at least move to closest, move one closer to the other and having removed all on top of one of them
-                        return estimateMoveCost(node.arm, closestStack) + distFromGoal * MOVE_COST + Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
+                        return estimateMoveCost(node.arm, closestStack) +
+                            distFromGoal * MOVE_COST +
+                            Math.min(estimateRemoveAboveCost(pos1) + estimateRemoveAboveCost(pos2));
                     }
 
                     const underAboveHeuristic = (above : boolean) : number => {
@@ -319,12 +321,12 @@ module Planner {
                             return 0;
                         }
 
-                        if (above) [pos1, pos2] = [pos2, pos1]; 
+                        if (above) [pos1, pos2] = [pos2, pos1];
 
                         if (pos1.x != pos2.x) {
                             return estimateMoveToSameStackCost(pos1, pos2);
                         }
-                        
+
                         if (pos1.y < pos2.y) {
                             // Goal fulfilled
                             return 0;
@@ -357,7 +359,7 @@ module Planner {
                         }
                     }
 
-                    switch(literal.relation) {
+                    switch (literal.relation) {
                     case "holding":
                         var pos = Util.findStackAndPosition(literal.args[0], node.stacks);
                         if (!pos) return 0;

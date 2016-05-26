@@ -141,7 +141,7 @@ module Util {
      * Form is always included, but color is preferred over size. The result only
      * contains both if needed. If there is no unique description, all properties are
      * used.
-     * 
+     *
      * @param objectKey The key of the item to find a description for.
      * @param objects A mapping from object keys to definitions.
      * @param stacks The stacks of the world.
@@ -173,7 +173,7 @@ module Util {
 
     /**
      * Check if list contains a given element.
-     * 
+     *
      * @param list The list to look in.
      * @param element The element to look for.
      */
@@ -184,7 +184,7 @@ module Util {
     /**
      * Finds the first element in a list where a condition holds, or a given
      * fallback value if not found.
-     * 
+     *
      * @param list The list to look in.
      * @param condition The boolean predicate to check for.
      * @param notFoundValue The value returned if the condition does not hold for any element.

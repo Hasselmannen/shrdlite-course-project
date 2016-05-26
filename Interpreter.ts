@@ -97,7 +97,7 @@ module Interpreter {
 
     /**
      * Interpret a parsed command into a logic formula describing the intended result.
-     * 
+     *
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
@@ -137,7 +137,7 @@ module Interpreter {
             throw new Error("Unknown command");
         }
 
-        // Remove imposible interpretations
+        // Remove impossible interpretations
         interpretation = interpretation.filter(checkInsideOnTop);
 
         if (interpretation.length <= 0) throw new Error("No valid solution found for the utterance");
@@ -170,7 +170,7 @@ module Interpreter {
 
     /**
      * Interpret a move command.
-     * 
+     *
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @param candidates Entities that matches the description of what should be moved.
@@ -181,7 +181,7 @@ module Interpreter {
         state : WorldState,
         candidates : string[],
         relativeToCandidates : string[]) : DNFFormula {
-        
+
         var interpretation : DNFFormula = [];
 
         // Special case when we don't have the "all" quanitfier
@@ -241,7 +241,7 @@ module Interpreter {
 
     /**
      * Interpret a take command.
-     * 
+     *
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @param candidates Entities that matches the description of what should be taken.
@@ -260,7 +260,7 @@ module Interpreter {
 
     /**
      * Interpret a put command.
-     * 
+     *
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @param relativeToCandidates Entities that matches the description of where the item is to be put.
@@ -291,7 +291,7 @@ module Interpreter {
 
             return interpretation;
         }
-        
+
         // Since the 'all' quantifier is applied to the location, flip the CNF logic
         // (explained more in the actual function)
         interpretation = CNFtoDNF(toCNF([state.holding], relativeToCandidates, cmd.location.relation, true));
@@ -308,7 +308,7 @@ module Interpreter {
                 );
             });
         });
-        
+
         return interpretation;
     }
 
@@ -409,7 +409,7 @@ module Interpreter {
     /**
      * Creates a conjunction of disjunctions, where a disjunction is all
      * one value from arr1 paired with all values of arr2. (e.g. if arr1 is ["a","b"]
-     * and arr2 is ["c", "d"] the output will return 
+     * and arr2 is ["c", "d"] the output will return
      * [[relation("a","c"), relation("a","d")],[relation("b","c"), relation("b","d")]])
      *
      * @param arr1 A list of ids that have a possible relation with all elements in arr2.

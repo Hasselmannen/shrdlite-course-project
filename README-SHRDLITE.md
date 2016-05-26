@@ -32,7 +32,7 @@ One of the extensions we chose to implement was an extended cost function. Inste
 
 ### Action Description
 
-When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambigous (if there is one) description of the object.
+When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambiguous (if there is one) description of the object.
 
 ## `Graph.ts`
 

@@ -309,7 +309,7 @@ module Interpreter {
             });
         });
         
-        return interpretation;        
+        return interpretation;
     }
 
     /**

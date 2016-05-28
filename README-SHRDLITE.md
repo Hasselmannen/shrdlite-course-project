@@ -34,6 +34,8 @@ One of the extensions we chose to implement was an extended cost function. Inste
 
 When the planner constructs the actual plan from the path it also add descriptive messages to tell the user what it is doing. It utilizes the function `shortestDescription`, which takes the world state (current stack distribution), object descriptions and an object name (identifier) as arguments and returns the shortest unambiguous (if there is one) description of the object.
 
+For example, given the task "take the object below the red box" in small, the last message will be "Taking the table", rather than "Taking the large blue table".
+
 ### Heuristic
 
 We have implemented quite an advanced heuristic, we are not sure if it is on extension level though. Basically we return the cost of the cheapest goal, and we estimate the cost of each goal by the most expensive part in reaching that goal. The reason for this is that the cost for reaching a goal can't possibly be cheaper than its most expensive part, but the cost of reaching other parts could change after achieving some of them. Thus we can't just take the sum of the parts if we want an admissible heuristic. When estimating the cost of a part we try to use as much information as given only the starting state of the world.

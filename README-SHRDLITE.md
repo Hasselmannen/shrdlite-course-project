@@ -28,7 +28,11 @@ Apart from the standard functionality of the planner (i.e. using A* to find a pl
 
 ### Extended Cost Function
 
-One of the extensions we chose to implement was an extended cost function. Instead of the standard cost function where every action has the same cost, i.e. minimizes the number of actions made, our cost function minimizes the amount of work done. We have defined work in such a way that it requires more energy to carry objects than to just move and large objects are even "heavier". It is also more straining to pick up an object that is closer to the ground, i.e. it costs less to pick up the topmost object in a tall stack than picking up something from the floor. We chose to have a linear interpolation between the maximum and minimum costs for picking up objects.
+One of the extensions we chose to implement was an extended cost function. Instead of the standard cost function where every action has the same cost, i.e. minimizes the number of actions made, our cost function minimizes the amount of work done. We have defined work in such a way that it requires more energy to carry objects than to just move and large objects are even "heavier". It is also more straining to pick up an object that is closer to the ground, i.e. it costs less to pick up the topmost object in a tall stack than picking up something from the floor. There is a similar cost for dropping objects. We chose to have a linear interpolation between the maximum and minimum costs for picking up and dropping objects.
+
+The easiest way of showing the difference between our cost function and the one where all actions cost the same is through the command `put a ball beside the blue box` in the (initial state of the) simple world in the shrdlite project. Since our cost function measures "work" and not just the number of actions, there will be a different optmimal solution in our implementation. It requires more work to pick up the large ball from the floor, carry the it next to the box and drop it than to move over to the small ball, pick it up from the stack its lying on and drop it next to the box.
+
+In the complex world one can also see that our cost function causes the robot arm to stack a lot of things on top of each other, similar to how many people treat their offices and desks, as a result of the cost for picking up and dropping objects.
 
 ### Action Description
 

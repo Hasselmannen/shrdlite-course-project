@@ -471,6 +471,10 @@ module Planner {
         // Call A* and retreive path
         var path = aStarSearch<SearchState>(graph, initialState, goalFunc, heuristicsFunc, timeout);
 
+        if (!path) {
+            throw new Error("No solution found");
+        }
+
         // Convert path to plan
         return convertPathToPlan(state.objects, path);
     }
